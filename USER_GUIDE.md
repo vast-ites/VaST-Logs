@@ -12,6 +12,7 @@
     - [Agent Configuration (`agent-config.json`)](#31-agent-configuration)
     - [Log Collection Strategies](#32-log-collection-strategies)
     - [Database & Service Monitoring](#33-database--service-monitoring)
+    - [Server Environment Variables (`.env`)](#35-server-environment-variables-env)
 4. [Features](#4-features)
     - [Dashboard & Infrastructure](#41-dashboard--infrastructure)
     - [Live Connection Tracking](#42-live-connection-tracking)
@@ -203,6 +204,42 @@ Enable the Database Profiler to track slow operations.
     db.setProfilingLevel(2, { slowms: 100 })
     ```
     *Note: Level 2 profiles all operations. Use Level 1 to profile only slow operations.*
+
+### 3.5 Server Environment Variables (`.env`)
+
+The DataVast server reads its configuration from a `.env` file located in the working directory (typically `/opt/datavast/.env`).
+
+**Example `.env` file:**
+```bash
+# Authentication
+AUTH_ENABLED=true
+ADMIN_PASSWORD=your-secure-password
+JWT_SECRET=$(openssl rand -hex 32)
+
+# Database
+INFLUX_TOKEN=your-influxdb-token
+
+# CORS — Allowed Origins (comma-separated)
+# REQUIRED in production. Without this, browsers block cross-origin API requests.
+CORS_ORIGINS=https://your-domain.com,https://your-server-ip:8080
+```
+
+#### CORS Configuration
+
+The `CORS_ORIGINS` variable controls which frontend domains are allowed to make API requests to the DataVast server. This is a **required** setting in production.
+
+| Scenario | Value |
+| :--- | :--- |
+| **Local development** | Not set (defaults to `http://localhost:5173`) |
+| **Single domain** | `CORS_ORIGINS=https://datavast.example.com` |
+| **IP + domain access** | `CORS_ORIGINS=https://datavast.example.com,https://10.0.0.5:8080` |
+| **HTTP + HTTPS** | `CORS_ORIGINS=https://example.com,http://example.com:8080` |
+
+> **Notes:**
+> - Multiple origins are separated by commas. Spaces around commas are automatically trimmed.
+> - Each origin must include the protocol (`http://` or `https://`) and port (if non-standard).
+> - Do **not** use wildcard (`*`) — it is not supported when credentials are enabled.
+> - After changing `.env`, restart the server: `systemctl restart datavast-server`
 
 ---
 

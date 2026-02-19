@@ -70,6 +70,10 @@ JWT_SECRET=your-random-secret-key-here
 # Database
 INFLUX_TOKEN=your-influxdb-token
 # CLICKHOUSE_DSN=clickhouse://localhost:9000  (optional, uses default if unset)
+
+# CORS — Comma-separated list of allowed origins for cross-origin requests
+# Required in production to allow your frontend domain to access the API
+CORS_ORIGINS=https://your-domain.com,https://your-server-ip:8080
 ```
 
 > **Note:** Passwords are automatically hashed with bcrypt on first startup. The `JWT_SECRET` is used to sign authentication tokens — if not set, a random one is generated (tokens won't survive server restarts).
@@ -354,9 +358,16 @@ Create `/opt/datavast/agent-config.json`:
 **Server (Optional)**:
 | Variable | Description | Default |
 |----------|-------------|--------|
+| `CORS_ORIGINS` | Comma-separated list of allowed CORS origins | `http://localhost:5173` |
 | `INFLUX_URL` | InfluxDB URL | `http://localhost:8086` |
 | `CLICKHOUSE_DSN` | ClickHouse connection string | `clickhouse://localhost:9000` |
 | `GIN_MODE` | Gin framework mode | `debug` (use `release` in prod) |
+
+> **⚠️ CORS Note:** In production, you **must** set `CORS_ORIGINS` to the domain(s) your frontend is served from. Without this, browsers will block API requests. Example:
+> ```bash
+> CORS_ORIGINS=https://datavast.example.com,https://10.0.0.5:8080
+> ```
+> Multiple origins are separated by commas. Spaces around commas are trimmed automatically.
 
 **Agent**:
 | Variable | Description | Default |
