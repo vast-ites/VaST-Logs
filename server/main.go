@@ -110,7 +110,7 @@ func main() {
 	// r.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "https://<SERVER_IP>:8080", "http://<SERVER_IP>:8080"},
+		AllowOrigins:     []string{"http://localhost:5173", "https://<SERVER_IP>:8080", "http://<SERVER_IP>:8080", "https://your-domain.com:8080", "https://your-domain.com"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Agent-Secret"},
 		ExposeHeaders:    []string{"Content-Length"},
