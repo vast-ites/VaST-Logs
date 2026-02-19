@@ -146,9 +146,9 @@ const Connections = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold font-display text-cyber-text flex items-center gap-3">
+                    <h1 className="text-xl sm:text-2xl font-bold font-display text-cyber-text flex items-center gap-3">
                         <Network className="text-cyan-400" />
                         Connection Tracking
                     </h1>
@@ -156,7 +156,7 @@ const Connections = () => {
                         Live monitoring of active ports and network connections on <span className="text-cyan-400 font-mono">{selectedHost || 'Select a Host'}</span>
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2">
                     {/* Threshold Config */}
                     <div className="relative">
                         <button
@@ -254,7 +254,7 @@ const Connections = () => {
 
             {/* Stats Bar */}
             {summary.length > 0 && (
-                <div className="flex items-center gap-4 text-xs font-mono">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
                     <div className="flex items-center gap-1.5 bg-cyber-gray/10 px-3 py-1.5 rounded-lg border border-cyber-gray/20">
                         <Server size={12} className="text-cyan-400" />
                         <span className="text-cyber-muted">PORTS:</span>

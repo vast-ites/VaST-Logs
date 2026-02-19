@@ -234,8 +234,8 @@ const Logs = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold font-display text-cyber-text flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold font-display text-cyber-text flex items-center gap-3">
                     <Terminal className="text-cyber-cyan" />
                     System Log Explorer
                 </h1>
@@ -246,7 +246,7 @@ const Logs = () => {
 
             {/* Search Bar */}
             <div className="glass-panel p-4 rounded-xl flex flex-wrap gap-4 items-center">
-                <div className="relative flex-1 min-w-[300px] group">
+                <div className="relative flex-1 min-w-0 group">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-cyber-muted" size={18} />
                     <input
                         type="text"
@@ -299,7 +299,7 @@ order:ASC|DESC">
                     </select>
                 </div>
 
-                <div className="flex items-center gap-2 border-l border-cyber-gray/20 pl-4">
+                <div className="flex flex-wrap items-center gap-2 sm:border-l sm:border-cyber-gray/20 sm:pl-4">
                     <span className="text-xs text-cyber-muted font-mono">LIMIT:</span>
                     <select
                         value={limit}
@@ -321,7 +321,7 @@ order:ASC|DESC">
                         Export
                     </button>
 
-                    <div className="flex items-center gap-2 border-l border-cyber-gray/20 pl-4">
+                    <div className="flex items-center gap-2">
                         <RefreshCw size={14} className="text-cyber-muted" />
                         <select
                             value={refreshInterval}
@@ -353,26 +353,51 @@ order:ASC|DESC">
                     ) : (
                         <div className="font-mono text-xs">
                             {currentLogs.map((log, i) => (
-                                <div key={i} className="flex gap-4 p-2 hover:bg-cyber-gray/20 border-b border-cyber-gray/10 transition-colors items-start">
-                                    <span className="text-cyber-muted shrink-0 w-40 font-mono text-[11px]">
-                                        {new Date(log.timestamp).toLocaleString('sv')}
-                                    </span>
-                                    <div className={`shrink-0 w-20 flex items-center justify-center gap-1 px-1 py-0.5 rounded border text-[10px] font-bold ${getLevelClass(log.level)}`}>
-                                        {getLevelIcon(log.level)}
-                                        {log.level || 'INFO'}
+                                <div key={i} className="p-2 hover:bg-cyber-gray/20 border-b border-cyber-gray/10 transition-colors">
+                                    {/* Desktop: horizontal row */}
+                                    <div className="hidden md:flex gap-4 items-start">
+                                        <span className="text-cyber-muted shrink-0 w-40 font-mono text-[11px]">
+                                            {new Date(log.timestamp).toLocaleString('sv')}
+                                        </span>
+                                        <div className={`shrink-0 w-20 flex items-center justify-center gap-1 px-1 py-0.5 rounded border text-[10px] font-bold ${getLevelClass(log.level)}`}>
+                                            {getLevelIcon(log.level)}
+                                            {log.level || 'INFO'}
+                                        </div>
+                                        <span className="text-cyber-magenta shrink-0 w-32 truncate flex items-center gap-1.5" title={`${log.host} | ${log.service}`}>
+                                            {getCategoryIcon(getServiceCategory(log.service))}
+                                            {log.host || 'localhost'}
+                                        </span>
+                                        <span className="text-cyber-green shrink-0 w-40 truncate" title={log.source_path}>
+                                            {log.source_path.split('/').pop()}
+                                        </span>
+                                        <span className="text-cyber-text break-all">
+                                            {log.message}
+                                        </span>
                                     </div>
-                                    <span className="text-cyber-magenta shrink-0 w-32 truncate flex items-center gap-1.5" title={`${log.host} | ${log.service}`}>
-                                        {/* Dynamic Category Icon */}
-                                        {getCategoryIcon(getServiceCategory(log.service))}
-
-                                        {log.host || 'localhost'}
-                                    </span>
-                                    <span className="text-cyber-green shrink-0 w-40 truncate" title={log.source_path}>
-                                        {log.source_path.split('/').pop()}
-                                    </span>
-                                    <span className="text-cyber-text break-all">
-                                        {log.message}
-                                    </span>
+                                    {/* Mobile: stacked card */}
+                                    <div className="md:hidden space-y-1">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-cyber-muted font-mono text-[10px]">
+                                                {new Date(log.timestamp).toLocaleString('sv')}
+                                            </span>
+                                            <div className={`shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-bold ${getLevelClass(log.level)}`}>
+                                                {getLevelIcon(log.level)}
+                                                {log.level || 'INFO'}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px]">
+                                            <span className="text-cyber-magenta flex items-center gap-1">
+                                                {getCategoryIcon(getServiceCategory(log.service))}
+                                                {log.host || 'localhost'}
+                                            </span>
+                                            <span className="text-cyber-green truncate" title={log.source_path}>
+                                                {log.source_path.split('/').pop()}
+                                            </span>
+                                        </div>
+                                        <div className="text-cyber-text text-[11px] break-all leading-relaxed">
+                                            {log.message}
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>

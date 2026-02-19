@@ -191,12 +191,12 @@ const Security = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold font-display text-cyber-text flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                <h1 className="text-xl sm:text-2xl font-bold font-display text-cyber-text flex items-center gap-3">
                     <Shield className={isCritical ? "text-red-500 animate-pulse" : "text-cyber-green"} />
                     Security Operations Center
                 </h1>
-                <div className={`px-4 py-1 rounded border font-mono text-sm font-bold flex items-center gap-2 ${isCritical ? 'bg-red-500/20 text-red-500 border-red-500 animate-pulse' :
+                <div className={`px-4 py-1 rounded border font-mono text-sm font-bold flex items-center gap-2 self-start sm:self-auto ${isCritical ? 'bg-red-500/20 text-red-500 border-red-500 animate-pulse' :
                     (currentStatus === 'WARNING' ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500' : 'bg-green-500/20 text-green-500 border-green-500')
                     }`}>
                     {isCritical ? <Unlock size={14} /> : <Lock size={14} />}
@@ -220,11 +220,11 @@ const Security = () => {
                 </div>
 
                 {/* Traffic Graph */}
-                <div className="col-span-2 glass-panel p-6 rounded-xl border border-cyber-gray flex flex-col">
-                    <h3 className="text-lg font-bold text-gray-300 mb-4 flex items-center gap-2">
+                <div className="col-span-1 lg:col-span-2 glass-panel p-4 sm:p-6 rounded-xl border border-cyber-gray flex flex-col">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-300 mb-4 flex items-center gap-2">
                         <Zap size={18} className="text-cyber-yellow" /> Network Intensity (Attack Signature)
                     </h3>
-                    <div className="flex-1 min-h-[300px]">
+                    <div className="flex-1 min-h-[200px] sm:min-h-[300px]">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={history}>
                                 <defs>

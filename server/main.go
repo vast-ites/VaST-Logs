@@ -5,7 +5,7 @@ import (
 	"log"
 	"math"
 	"os"
-	// "strings"
+	"strings"
 	"time"
 
 	"github.com/datavast/datavast/server/alert"
@@ -109,8 +109,18 @@ func main() {
 	// Enable Gzip compression
 	// r.Use(gzip.Gzip(gzip.DefaultCompression))
 
+	// CORS origins from environment (comma-separated), fallback to localhost for dev
+	corsOrigins := []string{"http://localhost:5173"}
+	if envOrigins := os.Getenv("CORS_ORIGINS"); envOrigins != "" {
+		corsOrigins = strings.Split(envOrigins, ",")
+		for i := range corsOrigins {
+			corsOrigins[i] = strings.TrimSpace(corsOrigins[i])
+		}
+		log.Printf("🌐 CORS Origins: %v", corsOrigins)
+	}
+
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "https://<SERVER_IP>:8080", "http://<SERVER_IP>:8080", "https://your-domain.com:8080", "https://your-domain.com"},
+		AllowOrigins:     corsOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Agent-Secret"},
 		ExposeHeaders:    []string{"Content-Length"},
