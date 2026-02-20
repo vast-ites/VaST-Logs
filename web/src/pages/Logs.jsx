@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Terminal, AlertTriangle, Bug, Info, Download, ChevronLeft, ChevronRight, RefreshCw, Database, Shield, Server, Globe, Box, Cpu, Layers } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useHost } from '../contexts/HostContext';
+import TimeRangeSelector from '../components/common/TimeRangeSelector';
 
 const Logs = () => {
     const { selectedHost, setSelectedHost } = useHost(); // Use Global Host Context
@@ -13,6 +14,8 @@ const Logs = () => {
     const [limit, setLimit] = useState(100);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
+    const [timeRange, setTimeRange] = useState('realtime');
+    const [customRange, setCustomRange] = useState({ from: null, to: null });
 
     // Initialize from URL Params
     useEffect(() => {
@@ -70,6 +73,23 @@ const Logs = () => {
             else if (filterService) params.append('service', filterService);
             if (searchParams.before) params.append('before', searchParams.before);
             if (searchParams.after) params.append('after', searchParams.after);
+
+            // Add TimeRange bounds if not overridden by search query
+            if (timeRange === 'custom') {
+                if (customRange.from && !searchParams.after) params.append('after', new Date(customRange.from).toISOString());
+                if (customRange.to && !searchParams.before) params.append('before', new Date(customRange.to).toISOString());
+            } else if (timeRange !== 'realtime' && !searchParams.after) {
+                let ms = 0;
+                if (timeRange.endsWith('m')) ms = parseInt(timeRange) * 60 * 1000;
+                else if (timeRange.endsWith('h')) ms = parseInt(timeRange) * 60 * 60 * 1000;
+                else if (timeRange.endsWith('d')) ms = parseInt(timeRange) * 24 * 60 * 60 * 1000;
+
+                if (ms > 0) {
+                    const afterDate = new Date(Date.now() - ms);
+                    params.append('after', afterDate.toISOString());
+                }
+            }
+
             if (searchParams.order) params.append('order', searchParams.order.toUpperCase());
 
             if (searchParams.q) params.append('search', searchParams.q);
@@ -99,9 +119,9 @@ const Logs = () => {
     useEffect(() => {
         setCurrentPage(1);
         fetchLogs();
-        const interval = setInterval(fetchLogs, refreshInterval);
+        const interval = setInterval(fetchLogs, timeRange === 'realtime' ? refreshInterval : 60000);
         return () => clearInterval(interval);
-    }, [filterLevel, filterService, searchTerm, selectedHost, limit, refreshInterval]);
+    }, [filterLevel, filterService, searchTerm, selectedHost, limit, refreshInterval, timeRange, customRange]);
 
     // Fetch Services List when host changes
     useEffect(() => {
@@ -320,8 +340,16 @@ order:ASC|DESC">
                         <Download size={16} />
                         Export
                     </button>
-
-                    <div className="flex items-center gap-2">
+                    <div className="ml-auto z-10 hidden md:block">
+                        <TimeRangeSelector
+                            value={timeRange}
+                            onChange={setTimeRange}
+                            onCustomChange={(from, to) => {
+                                setCustomRange({ from, to });
+                                setTimeRange('custom');
+                            }}
+                        />
+                    </div>                <div className="flex items-center gap-2">
                         <RefreshCw size={14} className="text-cyber-muted" />
                         <select
                             value={refreshInterval}
@@ -432,7 +460,7 @@ order:ASC|DESC">
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

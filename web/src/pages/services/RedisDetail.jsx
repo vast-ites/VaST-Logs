@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Database, Activity, Zap, HardDrive, TrendingUp, Clock, AlertTriangle } from 'lucide-react';
 import StatCard from '../../components/service/StatCard';
 import ChartPanel from '../../components/service/ChartPanel';
-import TimeRangeSelector from '../../components/service/TimeRangeSelector';
+import TimeRangeSelector from '../../components/common/TimeRangeSelector';
 import RefreshRateSelector from '../../components/service/RefreshRateSelector';
 import { LargestKeys, ExpensiveCommands } from '../../components/service/DiagnosticSections';
 
@@ -27,6 +27,7 @@ const RedisDetail = () => {
         }
     }, [selectedHost, setSearchParams]);
     const [timeRange, setTimeRange] = useState('5m');
+    const [customRange, setCustomRange] = useState({ from: null, to: null });
     const [refreshRate, setRefreshRate] = useState(5);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState(null);
@@ -38,8 +39,13 @@ const RedisDetail = () => {
             const token = localStorage.getItem('token');
             const headers = { Authorization: `Bearer ${token}` };
 
-            let url = `/api/v1/services/redis/db-stats`;
-            if (host) url += `?host=${host}`;
+            let timeParams = `duration=${timeRange}`;
+            if (timeRange === 'custom' && customRange.from && customRange.to) {
+                timeParams = `duration=custom&from=${encodeURIComponent(customRange.from)}&to=${encodeURIComponent(customRange.to)}`;
+            }
+
+            let url = `/api/v1/services/redis/db-stats?${timeParams}`;
+            if (host) url += `&host=${host}`;
             const res = await fetch(url, { headers });
             if (res.ok) {
                 const data = await res.json();
@@ -66,9 +72,9 @@ const RedisDetail = () => {
         setLoading(true);
     }, [host]);
 
-    useEffect(() => { fetchData(); }, [timeRange, host]);
+    useEffect(() => { fetchData(); }, [timeRange, customRange, host]);
     useEffect(() => {
-        if (refreshRate === 0) return;
+        if (refreshRate === 0 || timeRange === 'custom') return;
         const interval = setInterval(fetchData, refreshRate * 1000);
         return () => clearInterval(interval);
     }, [refreshRate, timeRange, host]);
@@ -110,7 +116,14 @@ const RedisDetail = () => {
                     </div>
                 </div>
                 <div className="flex gap-3">
-                    <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+                    <TimeRangeSelector
+                        value={timeRange}
+                        onChange={setTimeRange}
+                        onCustomChange={(from, to) => {
+                            setCustomRange({ from, to });
+                            setTimeRange('custom');
+                        }}
+                    />
                     <RefreshRateSelector value={refreshRate} onChange={setRefreshRate} />
                 </div>
             </div>

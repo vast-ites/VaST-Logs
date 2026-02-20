@@ -17,18 +17,17 @@ func (h *IngestionHandler) HandleGetServiceStats(c *gin.Context) {
 	serviceName := c.Param("service")
 	host := c.Query("host")
 	duration := c.DefaultQuery("duration", "1h")
+	fromStr := c.Query("from")
+	toStr := c.Query("to")
 
-	// Parse duration
-	dur, err := parseDuration(duration)
+	_, startTime, endTime, _, err := ParseTimeRange(duration, fromStr, toStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid duration"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid time range"})
 		return
 	}
 
-	startTime := time.Now().Add(-dur)
-
 	// Debug logging
-	fmt.Printf("[DEBUG] Service: %s, Duration: %s, StartTime: %v, Now: %v\n", serviceName, duration, startTime, time.Now())
+	fmt.Printf("[DEBUG] Service: %s, Duration: %s, StartTime: %v, EndTime: %v\n", serviceName, duration, startTime, endTime)
 
 	// Query access logs for stats
 	query := `
@@ -40,10 +39,10 @@ func (h *IngestionHandler) HandleGetServiceStats(c *gin.Context) {
 			countIf(status_code >= 400 AND status_code < 500) as status_4xx,
 			countIf(status_code >= 500 AND status_code < 600) as status_5xx
 		FROM datavast.access_logs
-		WHERE service = ? AND timestamp >= ?
+		WHERE service = ? AND timestamp >= ? AND timestamp <= ?
 	`
 
-	args := []interface{}{serviceName, startTime}
+	args := []interface{}{serviceName, startTime, endTime}
 	fmt.Printf("[DEBUG] Query args: %v\n", args)
 	if host != "" {
 		query += " AND host = ?"
@@ -81,8 +80,9 @@ func (h *IngestionHandler) HandleGetServiceStats(c *gin.Context) {
 			stats["status_5xx"] = s5xx
 			
 			// Calculate requests per second
-			if dur.Seconds() > 0 {
-				stats["requests_per_second"] = float64(totalReq) / dur.Seconds()
+			durSeconds := endTime.Sub(startTime).Seconds()
+			if durSeconds > 0 {
+				stats["requests_per_second"] = float64(totalReq) / durSeconds
 			}
 		} else {
 			fmt.Printf("[DEBUG] Scan error: %v\n", err)
@@ -100,22 +100,22 @@ func (h *IngestionHandler) HandleGetAccessLogs(c *gin.Context) {
 	host := c.Query("host")
 	limit := c.DefaultQuery("limit", "100")
 	duration := c.DefaultQuery("duration", "1h")
+	fromStr := c.Query("from")
+	toStr := c.Query("to")
 
-	dur, err := parseDuration(duration)
+	_, startTime, endTime, _, err := ParseTimeRange(duration, fromStr, toStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid duration"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid time range"})
 		return
 	}
-
-	startTime := time.Now().Add(-dur)
 
 	query := `
 		SELECT timestamp, ip, method, path, status_code, bytes_sent, country, city
 		FROM datavast.access_logs
-		WHERE service = ? AND timestamp >= ?
+		WHERE service = ? AND timestamp >= ? AND timestamp <= ?
 	`
 
-	args := []interface{}{serviceName, startTime}
+	args := []interface{}{serviceName, startTime, endTime}
 	if host != "" {
 		query += " AND host = ?"
 		args = append(args, host)
@@ -167,23 +167,23 @@ func (h *IngestionHandler) HandleGetGeoStats(c *gin.Context) {
 	serviceName := c.Param("service")
 	host := c.Query("host")
 	duration := c.DefaultQuery("duration", "1h")
+	fromStr := c.Query("from")
+	toStr := c.Query("to")
 
-	dur, err := parseDuration(duration)
+	_, startTime, endTime, _, err := ParseTimeRange(duration, fromStr, toStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid duration"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid time range"})
 		return
 	}
-
-	startTime := time.Now().Add(-dur)
 
 	// Query for top countries
 	countryQuery := `
 		SELECT country, count() as count
 		FROM datavast.access_logs
-		WHERE service = ? AND timestamp >= ? AND country != ''
+		WHERE service = ? AND timestamp >= ? AND timestamp <= ? AND country != ''
 	`
 
-	args := []interface{}{serviceName, startTime}
+	args := []interface{}{serviceName, startTime, endTime}
 	if host != "" {
 		countryQuery += " AND host = ?"
 		args = append(args, host)
@@ -214,10 +214,10 @@ func (h *IngestionHandler) HandleGetGeoStats(c *gin.Context) {
 	cityQuery := `
 		SELECT city, country, count() as count
 		FROM datavast.access_logs
-		WHERE service = ? AND timestamp >= ? AND city != ''
+		WHERE service = ? AND timestamp >= ? AND timestamp <= ? AND city != ''
 	`
 
-	cityArgs := []interface{}{serviceName, startTime}
+	cityArgs := []interface{}{serviceName, startTime, endTime}
 	if host != "" {
 		cityQuery += " AND host = ?"
 		cityArgs = append(cityArgs, host)
@@ -260,26 +260,25 @@ func (h *IngestionHandler) HandleGetTopIPs(c *gin.Context) {
 	host := c.Query("host")
 	limit := c.DefaultQuery("limit", "10")
 	duration := c.DefaultQuery("duration", "1h")
+	fromStr := c.Query("from")
+	toStr := c.Query("to")
 
-	dur, err := parseDuration(duration)
+	_, startTime, endTime, _, err := ParseTimeRange(duration, fromStr, toStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid duration"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid time range"})
 		return
 	}
 
-	startTime := time.Now().Add(-dur)
-
-	// Query for top IPs by request count
 	// Query for top IPs by request count
 	// Use argMax to get the LATEST domain and path for that IP
 	query := `
 		SELECT ip, count() as requests, sum(bytes_sent) as bytes, max(country) as country, max(city) as city, max(region) as region, argMax(domain, timestamp) as domain, argMax(path, timestamp) as path
 		FROM datavast.access_logs
-		WHERE service = ? AND timestamp >= ?
+		WHERE service = ? AND timestamp >= ? AND timestamp <= ?
 
 	`
 
-	args := []interface{}{serviceName, startTime}
+	args := []interface{}{serviceName, startTime, endTime}
 	if host != "" {
 		query += " AND host = ?"
 		args = append(args, host)
@@ -324,25 +323,6 @@ func (h *IngestionHandler) HandleGetTopIPs(c *gin.Context) {
 	})
 }
 
-// parseDuration converts string duration to time.Duration
-func parseDuration(s string) (time.Duration, error) {
-	switch s {
-	case "5m":
-		return 5 * time.Minute, nil
-	case "15m":
-		return 15 * time.Minute, nil
-	case "1h":
-		return time.Hour, nil
-	case "6h":
-		return 6 * time.Hour, nil
-	case "24h":
-		return 24 * time.Hour, nil
-	case "7d":
-		return 7 * 24 * time.Hour, nil
-	default:
-		return time.ParseDuration(s)
-	}
-}
 // HandleIngestServiceStats accepts DB metrics from the agent
 func (h *IngestionHandler) HandleIngestServiceStats(c *gin.Context) {
 	var entry storage.ServiceStatsEntry
@@ -368,8 +348,17 @@ func (h *IngestionHandler) HandleIngestServiceStats(c *gin.Context) {
 func (h *IngestionHandler) HandleGetServiceDBStats(c *gin.Context) {
 	service := c.Param("service")
 	host := c.Query("host")
+	duration := c.DefaultQuery("duration", "5m")
+	fromStr := c.Query("from")
+	toStr := c.Query("to")
 
-	statsJSON, ts, err := h.Logs.GetLatestServiceStats(host, service)
+	_, startTime, endTime, _, err := ParseTimeRange(duration, fromStr, toStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid time range"})
+		return
+	}
+
+	statsJSON, ts, err := h.Logs.GetLatestServiceStats(host, service, startTime, endTime)
 	if err != nil || statsJSON == "" {
 		c.JSON(http.StatusOK, gin.H{"stats": nil, "timestamp": nil})
 		return

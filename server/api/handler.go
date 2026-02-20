@@ -1067,12 +1067,17 @@ func (h *IngestionHandler) HandleSearchLogs(c *gin.Context) {
 
 func (h *IngestionHandler) HandleGetHistory(c *gin.Context) {
     duration := c.Query("duration")
+    fromStr := c.Query("from")
+    toStr := c.Query("to")
     host := c.Query("host")
-    if duration == "" {
-        duration = "15m"
+
+    rangeStr, _, _, aggWindow, err := ParseTimeRange(duration, fromStr, toStr)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
     }
 
-    history, err := h.Metrics.GetSystemMetricHistory(duration, host)
+    history, err := h.Metrics.GetSystemMetricHistory(rangeStr, aggWindow, host)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
@@ -1134,12 +1139,17 @@ func (h *IngestionHandler) HandleSaveSettings(c *gin.Context) {
 
 func (h *IngestionHandler) HandleGetInterfaceHistory(c *gin.Context) {
     duration := c.Query("duration")
+    fromStr := c.Query("from")
+    toStr := c.Query("to")
     host := c.Query("host")
-    if duration == "" {
-        duration = "15m"
+
+    rangeStr, _, _, aggWindow, err := ParseTimeRange(duration, fromStr, toStr)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
     }
 
-    history, err := h.Metrics.GetInterfaceHistory(duration, host)
+    history, err := h.Metrics.GetInterfaceHistory(rangeStr, aggWindow, host)
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
         return
@@ -1584,7 +1594,10 @@ func (h *IngestionHandler) HandleUnsilenceAlert(c *gin.Context) {
 func (h *IngestionHandler) HandleGetFiredAlerts(c *gin.Context) {
     limitStr := c.DefaultQuery("limit", "10")
     limit := 10
-    if v, err := strconv.Atoi(limitStr); err == nil && v > 0 && v <= 100 {
+    if v, err := strconv.Atoi(limitStr); err == nil && v > 0 {
+        if v > 1000 {
+            v = 1000 // cap at 1000
+        }
         limit = v
     }
 

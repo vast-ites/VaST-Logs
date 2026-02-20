@@ -4,13 +4,18 @@ import { StatCard } from '../components/widgets/StatCard';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { useHost } from '../contexts/HostContext';
 import SpeedometerGauge from '../components/widgets/SpeedometerGauge';
+import TimeRangeSelector from '../components/common/TimeRangeSelector';
 
 export const CpuPage = () => {
     const { selectedHost } = useHost();
     const [metrics, setMetrics] = useState(null);
     const [history, setHistory] = useState([]);
+    const [timeRange, setTimeRange] = useState('realtime');
+    const [customRange, setCustomRange] = useState({ from: null, to: null });
 
+    // Realtime Polling
     useEffect(() => {
+        if (timeRange !== 'realtime') return;
         const fetchMetrics = async () => {
             try {
                 const params = selectedHost ? `?host=${selectedHost}` : '';
@@ -33,7 +38,61 @@ export const CpuPage = () => {
         fetchMetrics();
         const interval = setInterval(fetchMetrics, 2000);
         return () => clearInterval(interval);
-    }, [selectedHost]);
+    }, [selectedHost, timeRange]);
+
+    // Historical Fetching
+    useEffect(() => {
+        if (timeRange === 'realtime') return;
+        const fetchHistory = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const hostParam = selectedHost ? `&host=${selectedHost}` : '';
+                let timeParams = `duration=${timeRange}`;
+                if (timeRange === 'custom' && customRange.from && customRange.to) {
+                    timeParams = `duration=custom&from=${encodeURIComponent(customRange.from)}&to=${encodeURIComponent(customRange.to)}`;
+                }
+                const res = await fetch(`/api/v1/metrics/history?${timeParams}${hostParam}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+
+                    setHistory(data.map(d => ({
+                        time: new Date(d.timestamp).toLocaleTimeString(),
+                        load: d.cpu_percent
+                    })));
+
+                    if (data.length > 0) {
+                        setMetrics(data[data.length - 1]);
+                    }
+                }
+            } catch (err) { console.error(err); }
+        };
+        fetchHistory();
+        const interval = setInterval(fetchHistory, 60000);
+        return () => clearInterval(interval);
+    }, [selectedHost, timeRange, customRange]);
+
+    // Independent Metric Fetch for Stat Cards if viewing history
+    useEffect(() => {
+        if (timeRange === 'realtime') return;
+        const fetchCurrent = async () => {
+            try {
+                const params = selectedHost ? `?host=${selectedHost}` : '';
+                const token = localStorage.getItem('token');
+                const res = await fetch(`/api/v1/metrics/system${params}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setMetrics(data);
+                }
+            } catch (e) { }
+        };
+        fetchCurrent();
+        const interval = setInterval(fetchCurrent, 10000);
+        return () => clearInterval(interval);
+    }, [selectedHost, timeRange]);
 
     if (!metrics) return <div className="p-10 text-center text-cyan-400 animate-pulse">Scanning Core Architecture...</div>;
 
@@ -72,7 +131,19 @@ export const CpuPage = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-80">
                 <div className="lg:col-span-2 glass-panel p-4 flex flex-col min-h-0">
-                    <h3 className="text-cyber-muted font-semibold text-sm mb-4">Total Avg Load</h3>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-cyber-muted font-semibold text-sm">Total Avg Load</h3>
+                        <div className="z-10">
+                            <TimeRangeSelector
+                                value={timeRange}
+                                onChange={setTimeRange}
+                                onCustomChange={(from, to) => {
+                                    setCustomRange({ from, to });
+                                    setTimeRange('custom');
+                                }}
+                            />
+                        </div>
+                    </div>
                     <div className="flex-1 min-h-0">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={history}>

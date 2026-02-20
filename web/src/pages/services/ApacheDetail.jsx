@@ -4,7 +4,7 @@ import { ArrowLeft, Globe, Activity, HardDrive, Users, TrendingUp, AlertCircle }
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import StatCard from '../../components/service/StatCard';
 import ChartPanel from '../../components/service/ChartPanel';
-import TimeRangeSelector from '../../components/service/TimeRangeSelector';
+import TimeRangeSelector from '../../components/common/TimeRangeSelector';
 import RefreshRateSelector from '../../components/service/RefreshRateSelector';
 import { useHost } from '../../contexts/HostContext';
 import { useSearchParams } from 'react-router-dom';
@@ -15,6 +15,7 @@ const ApacheDetail = () => {
     const navigate = useNavigate();
 
     const [timeRange, setTimeRange] = useState('5m');
+    const [customRange, setCustomRange] = useState({ from: null, to: null });
     const [refreshRate, setRefreshRate] = useState(1);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState(null);
@@ -29,12 +30,17 @@ const ApacheDetail = () => {
             const headers = { Authorization: `Bearer ${token}` };
             const baseUrl = `/api/v1/services/${serviceName}`;
 
+            let timeParams = `duration=${timeRange}`;
+            if (timeRange === 'custom' && customRange.from && customRange.to) {
+                timeParams = `duration=custom&from=${encodeURIComponent(customRange.from)}&to=${encodeURIComponent(customRange.to)}`;
+            }
+
             // Fetch all data in parallel
             const [statsRes, logsRes, geoRes, ipsRes] = await Promise.all([
-                fetch(`${baseUrl}/stats?duration=${timeRange}&host=${selectedHost || ''}`, { headers }),
-                fetch(`${baseUrl}/access-logs?duration=${timeRange}&limit=1000&host=${selectedHost || ''}`, { headers }),
-                fetch(`${baseUrl}/geo?duration=${timeRange}&host=${selectedHost || ''}`, { headers }),
-                fetch(`${baseUrl}/top-ips?duration=${timeRange}&limit=10&host=${selectedHost || ''}`, { headers }),
+                fetch(`${baseUrl}/stats?${timeParams}&host=${selectedHost || ''}`, { headers }),
+                fetch(`${baseUrl}/access-logs?${timeParams}&limit=1000&host=${selectedHost || ''}`, { headers }),
+                fetch(`${baseUrl}/geo?${timeParams}&host=${selectedHost || ''}`, { headers }),
+                fetch(`${baseUrl}/top-ips?${timeParams}&limit=10&host=${selectedHost || ''}`, { headers }),
             ]);
 
             if (statsRes.ok) setStats(await statsRes.json());
@@ -60,11 +66,11 @@ const ApacheDetail = () => {
 
     useEffect(() => {
         fetchData();
-    }, [timeRange, serviceName, selectedHost]);
+    }, [timeRange, customRange, serviceName, selectedHost]);
 
     // Auto-refresh — must include selectedHost so the interval uses the correct closure
     useEffect(() => {
-        if (refreshRate === 0) return;
+        if (refreshRate === 0 || timeRange === 'custom') return;
 
         const interval = setInterval(fetchData, refreshRate * 1000);
         return () => clearInterval(interval);
@@ -108,7 +114,14 @@ const ApacheDetail = () => {
                 </div>
 
                 <div className="flex gap-3">
-                    <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+                    <TimeRangeSelector
+                        value={timeRange}
+                        onChange={setTimeRange}
+                        onCustomChange={(from, to) => {
+                            setCustomRange({ from, to });
+                            setTimeRange('custom');
+                        }}
+                    />
                     <RefreshRateSelector value={refreshRate} onChange={setRefreshRate} />
                 </div>
             </div>

@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Database, Activity, Zap, AlertTriangle, Users, Clock, HardDrive } from 'lucide-react';
 import StatCard from '../../components/service/StatCard';
 import ChartPanel from '../../components/service/ChartPanel';
-import TimeRangeSelector from '../../components/service/TimeRangeSelector';
+import TimeRangeSelector from '../../components/common/TimeRangeSelector';
 import RefreshRateSelector from '../../components/service/RefreshRateSelector';
 import SetupInstructionBanner from '../../components/service/SetupInstructionBanner';
 import { TablesWithoutIndexes, HighIOTables, SlowQueries } from '../../components/service/DiagnosticSections';
@@ -13,6 +13,7 @@ const MySQLDetail = () => {
     const { selectedHost } = useHost();
     const navigate = useNavigate();
     const [timeRange, setTimeRange] = useState('5m');
+    const [customRange, setCustomRange] = useState({ from: null, to: null });
     const [refreshRate, setRefreshRate] = useState(5);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState(null);
@@ -23,7 +24,12 @@ const MySQLDetail = () => {
             const token = localStorage.getItem('token');
             const headers = { Authorization: `Bearer ${token}` };
 
-            const res = await fetch(`/api/v1/services/mysql/db-stats?host=${selectedHost || ''}`, { headers });
+            let timeParams = `duration=${timeRange}`;
+            if (timeRange === 'custom' && customRange.from && customRange.to) {
+                timeParams = `duration=custom&from=${encodeURIComponent(customRange.from)}&to=${encodeURIComponent(customRange.to)}`;
+            }
+
+            const res = await fetch(`/api/v1/services/mysql/db-stats?${timeParams}&host=${selectedHost || ''}`, { headers });
             if (res.ok) {
                 const data = await res.json();
                 if (data.stats) {
@@ -48,17 +54,17 @@ const MySQLDetail = () => {
         setLoading(true);
     }, [selectedHost]);
 
-    useEffect(() => { fetchData(); }, [timeRange, selectedHost]);
+    useEffect(() => { fetchData(); }, [timeRange, customRange, selectedHost]);
     useEffect(() => {
-        if (refreshRate === 0) return;
+        if (refreshRate === 0 || timeRange === 'custom') return;
         const interval = setInterval(fetchData, refreshRate * 1000);
         return () => clearInterval(interval);
     }, [refreshRate, timeRange, selectedHost]);
 
     if (loading) return <div className="p-6 text-cyber-cyan">Loading MySQL metrics...</div>;
 
-    const isStale = lastUpdated && (new Date().getTime() - new Date(lastUpdated).getTime() > 600000);
-    const hasData = stats && !isStale && (stats.threads_connected > 0 || stats.queries_per_second > 0);
+    const isStale = lastUpdated && timeRange !== 'custom' && (new Date().getTime() - new Date(lastUpdated).getTime() > 600000);
+    const hasData = stats && (stats.threads_connected > 0 || stats.queries_per_second > 0);
     const s = stats || {};
     const connUsagePercent = s.max_connections ? ((s.threads_connected / s.max_connections) * 100).toFixed(1) : 0;
     const processList = s.process_list || [];
@@ -93,7 +99,14 @@ const MySQLDetail = () => {
                     </div>
                 </div>
                 <div className="flex gap-3">
-                    <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
+                    <TimeRangeSelector
+                        value={timeRange}
+                        onChange={setTimeRange}
+                        onCustomChange={(from, to) => {
+                            setCustomRange({ from, to });
+                            setTimeRange('custom');
+                        }}
+                    />
                     <RefreshRateSelector value={refreshRate} onChange={setRefreshRate} />
                 </div>
             </div>

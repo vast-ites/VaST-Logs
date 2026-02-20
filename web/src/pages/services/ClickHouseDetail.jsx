@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Database, Search, RefreshCw, Activity, HardDrive, Zap, Layers } from 'lucide-react';
 import RefreshRateSelector from '../../components/service/RefreshRateSelector';
+import TimeRangeSelector from '../../components/common/TimeRangeSelector';
 import StatCard from '../../components/service/StatCard';
 import ChartPanel from '../../components/service/ChartPanel';
 
@@ -24,6 +25,8 @@ const ClickHouseDetail = () => {
 
     const navigate = useNavigate();
 
+    const [timeRange, setTimeRange] = useState('5m');
+    const [customRange, setCustomRange] = useState({ from: null, to: null });
     const [logs, setLogs] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -34,9 +37,23 @@ const ClickHouseDetail = () => {
             const token = localStorage.getItem('token');
             const headers = { Authorization: `Bearer ${token}` };
 
+            let timeParams = `duration=${timeRange}`;
+            if (timeRange === 'custom' && customRange.from && customRange.to) {
+                timeParams = `duration=custom&from=${encodeURIComponent(customRange.from)}&to=${encodeURIComponent(customRange.to)}`;
+            }
+
             // 1. Fetch Logs
             const svcQuery = serviceName || 'clickhouse';
             let logUrl = `/api/v1/logs/search?service=${svcQuery}&limit=100`;
+            if (timeRange === 'custom' && customRange.from && customRange.to) {
+                logUrl += `&after=${encodeURIComponent(new Date(customRange.from).toISOString())}&before=${encodeURIComponent(new Date(customRange.to).toISOString())}`;
+            } else if (timeRange !== 'realtime' && timeRange !== 'custom') {
+                let ms = 0;
+                if (timeRange.endsWith('m')) ms = parseInt(timeRange) * 60 * 1000;
+                else if (timeRange.endsWith('h')) ms = parseInt(timeRange) * 60 * 60 * 1000;
+                else if (timeRange.endsWith('d')) ms = parseInt(timeRange) * 24 * 60 * 60 * 1000;
+                if (ms > 0) logUrl += `&after=${new Date(Date.now() - ms).toISOString()}`;
+            }
             if (host) logUrl += `&host=${host}`;
 
             const resLogs = await fetch(logUrl, { headers });
@@ -48,8 +65,8 @@ const ClickHouseDetail = () => {
             }
 
             // 2. Fetch System Metrics
-            let statsUrl = `/api/v1/services/clickhouse/db-stats`;
-            if (host) statsUrl += `?host=${host}`;
+            let statsUrl = `/api/v1/services/clickhouse/db-stats?${timeParams}`;
+            if (host) statsUrl += `&host=${host}`;
 
             const resStats = await fetch(statsUrl, { headers });
             if (resStats.ok) {
@@ -82,13 +99,13 @@ const ClickHouseDetail = () => {
     useEffect(() => {
         fetchData();
         setLoading(true); // Reset loading on host change
-    }, [serviceName, host]);
+    }, [timeRange, customRange, serviceName, host]);
 
     useEffect(() => {
-        if (refreshRate === 0) return;
+        if (refreshRate === 0 || timeRange === 'custom') return;
         const interval = setInterval(fetchData, refreshRate * 1000);
         return () => clearInterval(interval);
-    }, [refreshRate, serviceName, host]);
+    }, [refreshRate, timeRange, serviceName, host]);
 
     // Helpers
     const formatBytes = (bytes) => {
@@ -118,7 +135,17 @@ const ClickHouseDetail = () => {
                         </p>
                     </div>
                 </div>
-                <RefreshRateSelector value={refreshRate} onChange={setRefreshRate} />
+                <div className="flex gap-3">
+                    <TimeRangeSelector
+                        value={timeRange}
+                        onChange={setTimeRange}
+                        onCustomChange={(from, to) => {
+                            setCustomRange({ from, to });
+                            setTimeRange('custom');
+                        }}
+                    />
+                    <RefreshRateSelector value={refreshRate} onChange={setRefreshRate} />
+                </div>
             </div>
 
             {/* Metrics Dashboard */}

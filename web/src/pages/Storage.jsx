@@ -3,12 +3,15 @@ import { HardDrive, FileText, ArrowUp, ArrowDown } from 'lucide-react';
 import { StatCard } from '../components/widgets/StatCard';
 import { useHost } from '../contexts/HostContext';
 import SpeedometerGauge from '../components/widgets/SpeedometerGauge';
+import TimeRangeSelector from '../components/common/TimeRangeSelector';
 
 export const Storage = () => {
     const { selectedHost } = useHost();
     const [metrics, setMetrics] = useState(null);
 
     const [history, setHistory] = useState([]);
+    const [timeRange, setTimeRange] = useState('realtime');
+    const [customRange, setCustomRange] = useState({ from: null, to: null });
 
     useEffect(() => {
         const fetchData = async () => {
@@ -21,8 +24,19 @@ export const Storage = () => {
                 const res = await fetch(`/api/v1/metrics/system${params}`, { headers });
                 if (res.ok) setMetrics(await res.json());
 
-                // Fetch History (15m)
-                const resHist = await fetch(`/api/v1/metrics/history${params}&duration=15m`, { headers });
+                // Determine history parameters
+                let durationParam = 'duration=15m';
+                if (timeRange !== 'realtime') {
+                    if (timeRange === 'custom' && customRange.from && customRange.to) {
+                        durationParam = `duration=custom&from=${encodeURIComponent(customRange.from)}&to=${encodeURIComponent(customRange.to)}`;
+                    } else {
+                        durationParam = `duration=${timeRange}`;
+                    }
+                }
+                const hostQuery = selectedHost ? `&host=${selectedHost}` : '';
+
+                // Fetch History
+                const resHist = await fetch(`/api/v1/metrics/history?${durationParam}${hostQuery}`, { headers });
                 if (resHist.ok) setHistory(await resHist.json());
 
             } catch (err) {
@@ -31,9 +45,9 @@ export const Storage = () => {
         };
 
         fetchData();
-        const interval = setInterval(fetchData, 5000);
+        const interval = setInterval(fetchData, timeRange === 'realtime' ? 5000 : 60000);
         return () => clearInterval(interval);
-    }, [selectedHost]);
+    }, [selectedHost, timeRange, customRange]);
 
     if (!metrics) return <div className="p-10 text-center text-amber-400 animate-pulse">Mounting File Systems...</div>;
 
@@ -74,7 +88,19 @@ export const Storage = () => {
             </div>
 
             <div className="glass-panel p-6">
-                <h3 className="text-cyber-text font-semibold mb-6">Real-Time Disk I/O Throughput (MB/s)</h3>
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-cyber-text font-semibold">Disk I/O Throughput History (MB/s)</h3>
+                    <div className="z-10">
+                        <TimeRangeSelector
+                            value={timeRange}
+                            onChange={setTimeRange}
+                            onCustomChange={(from, to) => {
+                                setCustomRange({ from, to });
+                                setTimeRange('custom');
+                            }}
+                        />
+                    </div>
+                </div>
                 <div className="h-64 flex items-end justify-between gap-1">
                     {(() => {
                         // Prepare data

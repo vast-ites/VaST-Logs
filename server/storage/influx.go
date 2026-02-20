@@ -181,11 +181,7 @@ func (s *MetricsStore) GetLatestSystemMetrics(host string) (*SystemMetricData, e
     return nil, fmt.Errorf("no data found")
 }
 
-func (s *MetricsStore) GetSystemMetricHistory(duration, host string) ([]SystemMetricData, error) {
-    if duration == "" {
-        duration = "15m"
-    }
-
+func (s *MetricsStore) GetSystemMetricHistory(rangeStr, aggregateWindow, host string) ([]SystemMetricData, error) {
     hostFilter := ""
     if host != "" {
         hostFilter = fmt.Sprintf(`r["host"] == "%s" and `, host)
@@ -194,12 +190,12 @@ func (s *MetricsStore) GetSystemMetricHistory(duration, host string) ([]SystemMe
     // Downsample using aggregateWindow
 	query := fmt.Sprintf(`
 	from(bucket: "%s")
-	|> range(start: -%s)
+	|> range(%s)
 	|> filter(fn: (r) => r["_measurement"] == "system")
     |> filter(fn: (r) => %s(r["_field"] == "cpu_percent" or r["_field"] == "memory_usage" or r["_field"] == "disk_usage" or r["_field"] == "net_recv_rate" or r["_field"] == "bytes_sent" or r["_field"] == "disk_read_rate" or r["_field"] == "disk_write_rate"))
-    |> aggregateWindow(every: 10s, fn: mean, createEmpty: false)
+    |> aggregateWindow(every: %s, fn: mean, createEmpty: false)
 	|> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-	`, s.bucket, duration, hostFilter)
+	`, s.bucket, rangeStr, hostFilter, aggregateWindow)
 
 	result, err := s.queryAPI.Query(context.Background(), query)
 	if err != nil {
@@ -329,23 +325,7 @@ type InterfaceMetricData struct {
     Time        time.Time `json:"time"`
 }
 
-func (s *MetricsStore) GetInterfaceHistory(duration, host string) ([]InterfaceMetricData, error) {
-    if duration == "" {
-        duration = "15m"
-    }
-
-    // Dynamic Aggregation Window
-    aggregateWindow := "10s"
-    if d, err := time.ParseDuration(duration); err == nil {
-        if d >= 24*time.Hour {
-            aggregateWindow = "1h"
-        } else if d >= 6*time.Hour {
-            aggregateWindow = "5m"
-        } else if d >= 1*time.Hour {
-             aggregateWindow = "1m"
-        }
-    }
-
+func (s *MetricsStore) GetInterfaceHistory(rangeStr, aggregateWindow, host string) ([]InterfaceMetricData, error) {
     hostFilter := ""
     if host != "" {
         hostFilter = fmt.Sprintf(`|> filter(fn: (r) => r["host"] == "%s")`, host)
@@ -354,13 +334,13 @@ func (s *MetricsStore) GetInterfaceHistory(duration, host string) ([]InterfaceMe
     // We want to calculate RATE (bytes/sec) from the Counters (bytes_sent/recv)
     query := fmt.Sprintf(`
     from(bucket: "%s")
-    |> range(start: -%s)
+    |> range(%s)
     |> filter(fn: (r) => r["_measurement"] == "network_interface")
     %s
     |> derivative(unit: 1s, nonNegative: true) 
     |> aggregateWindow(every: %s, fn: mean, createEmpty: false)
     |> pivot(rowKey:["_time", "interface"], columnKey: ["_field"], valueColumn: "_value")
-    `, s.bucket, duration, hostFilter, aggregateWindow)
+    `, s.bucket, rangeStr, hostFilter, aggregateWindow)
 
     result, err := s.queryAPI.Query(context.Background(), query)
     if err != nil {

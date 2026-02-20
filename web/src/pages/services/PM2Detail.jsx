@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Monitor, Search, Activity, HardDrive, Cpu, RefreshCw, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import RefreshRateSelector from '../../components/service/RefreshRateSelector';
+import TimeRangeSelector from '../../components/common/TimeRangeSelector';
 import StatCard from '../../components/service/StatCard';
 
 import { useHost } from '../../contexts/HostContext';
@@ -21,6 +22,8 @@ const PM2Detail = () => {
 
     const navigate = useNavigate();
 
+    const [timeRange, setTimeRange] = useState('5m');
+    const [customRange, setCustomRange] = useState({ from: null, to: null });
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshRate, setRefreshRate] = useState(5);
@@ -30,8 +33,13 @@ const PM2Detail = () => {
             const token = localStorage.getItem('token');
             const headers = { Authorization: `Bearer ${token}` };
 
-            let statsUrl = `/api/v1/services/pm2/db-stats`;
-            if (host) statsUrl += `?host=${host}`;
+            let timeParams = `duration=${timeRange}`;
+            if (timeRange === 'custom' && customRange.from && customRange.to) {
+                timeParams = `duration=custom&from=${encodeURIComponent(customRange.from)}&to=${encodeURIComponent(customRange.to)}`;
+            }
+
+            let statsUrl = `/api/v1/services/pm2/db-stats?${timeParams}`;
+            if (host) statsUrl += `&host=${host}`;
 
             const res = await fetch(statsUrl, { headers });
             if (res.ok) {
@@ -61,13 +69,13 @@ const PM2Detail = () => {
     useEffect(() => {
         fetchData();
         setLoading(true);
-    }, [serviceName, host]);
+    }, [timeRange, customRange, serviceName, host]);
 
     useEffect(() => {
-        if (refreshRate === 0) return;
+        if (refreshRate === 0 || timeRange === 'custom') return;
         const interval = setInterval(fetchData, refreshRate * 1000);
         return () => clearInterval(interval);
-    }, [refreshRate, serviceName, host]);
+    }, [refreshRate, timeRange, serviceName, host]);
 
     const formatBytes = (bytes) => {
         if (!bytes) return '0 B';
@@ -125,7 +133,17 @@ const PM2Detail = () => {
                         </p>
                     </div>
                 </div>
-                <RefreshRateSelector value={refreshRate} onChange={setRefreshRate} />
+                <div className="flex gap-3">
+                    <TimeRangeSelector
+                        value={timeRange}
+                        onChange={setTimeRange}
+                        onCustomChange={(from, to) => {
+                            setCustomRange({ from, to });
+                            setTimeRange('custom');
+                        }}
+                    />
+                    <RefreshRateSelector value={refreshRate} onChange={setRefreshRate} />
+                </div>
             </div>
 
             {loading && !stats ? (

@@ -8,7 +8,10 @@ export const Alerts = () => {
     const [activeTab, setActiveTab] = useState('rules');
     const [rules, setRules] = useState([]);
     const [channels, setChannels] = useState([]);
+    const [firedAlerts, setFiredAlerts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [historyPage, setHistoryPage] = useState(1);
+    const itemsPerPage = 10;
     const role = localStorage.getItem('role');
 
     const [showRuleModal, setShowRuleModal] = useState(false);
@@ -59,12 +62,14 @@ export const Alerts = () => {
         const token = localStorage.getItem('token');
         const headers = { 'Authorization': `Bearer ${token}` };
         try {
-            const [rulesRes, chansRes] = await Promise.all([
+            const [rulesRes, chansRes, firedRes] = await Promise.all([
                 fetch('/api/v1/alerts/rules', { headers }),
-                fetch('/api/v1/alerts/channels', { headers })
+                fetch('/api/v1/alerts/channels', { headers }),
+                fetch('/api/v1/alerts/fired?limit=1000', { headers })
             ]);
             if (rulesRes.ok) setRules(await rulesRes.json() || []);
             if (chansRes.ok) setChannels(await chansRes.json() || []);
+            if (firedRes.ok) setFiredAlerts(await firedRes.json() || []);
         } catch (e) { console.error(e); }
         setLoading(false);
     };
@@ -156,6 +161,7 @@ export const Alerts = () => {
             <div className="flex gap-4 border-b border-cyber-gray/20 pb-1">
                 <button onClick={() => setActiveTab('rules')} className={`px-4 py-2 text-sm font-semibold transition ${activeTab === 'rules' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-cyber-muted hover:text-cyber-text'}`}>Alert Rules</button>
                 <button onClick={() => setActiveTab('channels')} className={`px-4 py-2 text-sm font-semibold transition ${activeTab === 'channels' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-cyber-muted hover:text-cyber-text'}`}>Notification Channels</button>
+                <button onClick={() => setActiveTab('history')} className={`px-4 py-2 text-sm font-semibold transition ${activeTab === 'history' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-cyber-muted hover:text-cyber-text'}`}>Alert History</button>
             </div>
 
             {/* Rules Content */}
@@ -276,6 +282,61 @@ export const Alerts = () => {
                             );
                         })}
                     </div>
+                </div>
+            )}
+
+            {/* History Content */}
+            {activeTab === 'history' && (
+                <div className="space-y-4">
+                    <div className="h-[600px] overflow-y-auto overflow-x-auto pr-2 custom-scrollbar">
+                        <div className="grid gap-4 min-w-[600px]">
+                            {firedAlerts.length === 0 && !loading && <div className="text-center text-gray-500 py-10">No alerts have been fired recently.</div>}
+                            {firedAlerts.slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage).map(alert => (
+                                <div key={alert.id} className="glass-panel p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-cyber-gray/20 rounded-lg">
+                                    <div className="flex flex-col gap-1 w-full">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="font-bold text-lg text-cyber-text">{alert.rule_name}</h3>
+                                            <span className={`px-2 py-0.5 text-[10px] rounded uppercase font-bold tracking-wider ${alert.severity === 'critical' ? 'bg-red-500/20 text-red-500' :
+                                                alert.severity === 'warning' ? 'bg-amber-500/20 text-amber-500' :
+                                                    'bg-blue-500/20 text-blue-500'
+                                                }`}>
+                                                {alert.severity}
+                                            </span>
+                                        </div>
+                                        <div className="text-sm font-mono text-cyan-400 mt-1 flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+                                            {alert.host !== '*' && alert.host !== '' ? `${alert.host}` : 'Global Rule'}
+                                        </div>
+                                        <div className="text-sm text-cyber-muted mt-2">{alert.message}</div>
+                                        <div className="text-xs text-cyber-dim mt-2">{new Date(alert.fired_at).toLocaleString()}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    {firedAlerts.length > itemsPerPage && (
+                        <div className="flex justify-between items-center mt-6">
+                            <span className="text-xs text-cyber-muted">
+                                Showing {((historyPage - 1) * itemsPerPage) + 1} to {Math.min(historyPage * itemsPerPage, firedAlerts.length)} of {firedAlerts.length}
+                            </span>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                                    disabled={historyPage === 1}
+                                    className="px-3 py-1 bg-cyber-gray/20 text-cyber-text rounded disabled:opacity-30 hover:bg-cyan-500/20 hover:text-cyan-400 transition"
+                                >
+                                    Previous
+                                </button>
+                                <button
+                                    onClick={() => setHistoryPage(p => Math.min(Math.ceil(firedAlerts.length / itemsPerPage), p + 1))}
+                                    disabled={historyPage >= Math.ceil(firedAlerts.length / itemsPerPage)}
+                                    className="px-3 py-1 bg-cyber-gray/20 text-cyber-text rounded disabled:opacity-30 hover:bg-cyan-500/20 hover:text-cyan-400 transition"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

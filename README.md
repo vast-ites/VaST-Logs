@@ -6,6 +6,7 @@
 
 ### 🔍 **Comprehensive Monitoring**
 - **Real-Time Metrics**: CPU, Memory, Disk I/O, Network traffic (1s resolution)
+- **Historical Analysis**: Custom date and time range selectors to instantly retrieve past database and system metrics.
 - **Container Monitoring**: Auto-discovery and streaming logs from Docker containers
 - **Process Tracking**: Monitor individual processes with resource usage
 - **Multi-Host Dashboard**: Centralized view of all connected agents
@@ -25,6 +26,7 @@
 
 ### 🚨 **Intelligent Alerting**
 - **Multi-Channel Notifications**: Email (SMTP), Webhook, and **Browser Push Notifications**
+- **Paginated Alert Timeline**: Scroll back through up to 1,000 historical firing events directly inside the Alert dashboard via a highly-optimized paginated database view.
 - **DDoS Detection**: Automatic threat detection and alerting
 - **Resource Thresholds**: Alert on CPU, Memory, Disk usage
 - **Customizable Rules**: Define your own alert conditions
@@ -626,7 +628,11 @@ This project is proprietary software. All rights reserved.
 - [x] Hardcoded InfluxDB token fallback removed (fatal if `INFLUX_TOKEN` unset)
 - [x] Production `.env` file with `600` permissions and `EnvironmentFile` in systemd
 
-#### Phase 40: Service Auto-Discovery & Multi-Format Log Parsing 🔄
+#### Phase 40: Service Auto-Discovery & Multi-Format Log Parsing ✅
+
+#### Phase 41: Observability & Security Enhancements ✅
+
+#### Phase 42: Custom Historical Date/Time Filtering 🔄
 - [x] Path-based service type inference (`inferServiceType()`) for auto-discovered logs
 - [x] Caddy JSON access log parser in server ingestion handler
 - [x] Traefik CLF access log parsing with web service detection

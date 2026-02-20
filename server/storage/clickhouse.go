@@ -1185,7 +1185,7 @@ func (s *LogStore) InsertServiceStats(entry ServiceStatsEntry) error {
 	`, entry.Timestamp, entry.Host, entry.Service, entry.Stats)
 }
 
-func (s *LogStore) GetLatestServiceStats(host, service string) (string, time.Time, error) {
+func (s *LogStore) GetLatestServiceStats(host, service string, start, end time.Time) (string, time.Time, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1195,6 +1195,15 @@ func (s *LogStore) GetLatestServiceStats(host, service string) (string, time.Tim
 	if host != "" {
 		query += " AND host = ?"
 		args = append(args, host)
+	}
+
+	if !start.IsZero() {
+		query += " AND timestamp >= ?"
+		args = append(args, start)
+	}
+	if !end.IsZero() {
+		query += " AND timestamp <= ?"
+		args = append(args, end)
 	}
 
 	query += " ORDER BY timestamp DESC LIMIT 1"

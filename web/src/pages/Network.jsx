@@ -4,12 +4,14 @@ import { StatCard } from '../components/widgets/StatCard';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { useHost } from '../contexts/HostContext';
 import SpeedometerGauge from '../components/widgets/SpeedometerGauge';
+import TimeRangeSelector from '../components/common/TimeRangeSelector';
 
 export const NetworkPage = () => {
     const { selectedHost } = useHost();
     const [metrics, setMetrics] = useState(null);
     const [history, setHistory] = useState([]);
-    const [timeRange, setTimeRange] = useState('realtime'); // realtime, 1h, 6h, 24h, 7d
+    const [timeRange, setTimeRange] = useState('realtime'); // realtime, 1h, 6h, 24h, 7d, custom
+    const [customRange, setCustomRange] = useState({ from: null, to: null });
 
     // Realtime Polling
     useEffect(() => {
@@ -51,7 +53,13 @@ export const NetworkPage = () => {
             try {
                 const token = localStorage.getItem('token');
                 const hostParam = selectedHost ? `&host=${selectedHost}` : '';
-                const res = await fetch(`/api/v1/metrics/interfaces/history?duration=${timeRange}${hostParam}`, {
+
+                let timeParams = `duration=${timeRange}`;
+                if (timeRange === 'custom' && customRange.from && customRange.to) {
+                    timeParams = `duration=custom&from=${encodeURIComponent(customRange.from)}&to=${encodeURIComponent(customRange.to)}`;
+                }
+
+                const res = await fetch(`/api/v1/metrics/interfaces/history?${timeParams}${hostParam}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -97,7 +105,7 @@ export const NetworkPage = () => {
         fetchHistory();
         const interval = setInterval(fetchHistory, 60000); // 1m polling for history
         return () => clearInterval(interval);
-    }, [selectedHost, timeRange]);
+    }, [selectedHost, timeRange, customRange]);
 
     // Independent Metric Fetch for Stat Cards (Always run regardless of chart mode)
     useEffect(() => {
@@ -131,22 +139,10 @@ export const NetworkPage = () => {
         return `${bytesPerSec.toFixed(0)} B/s`;
     };
 
-    const TimeSelector = () => (
-        <div className="flex bg-cyber-gray/20 rounded-lg p-1 gap-1">
-            {['realtime', '1h', '6h', '24h', '7d'].map(range => (
-                <button
-                    key={range}
-                    onClick={() => setTimeRange(range)}
-                    className={`px-3 py-1 text-xs rounded transition-all ${timeRange === range
-                        ? 'bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/30'
-                        : 'text-cyber-muted hover:text-cyber-text hover:bg-cyber-gray/20'
-                        }`}
-                >
-                    {range === 'realtime' ? 'Live' : range}
-                </button>
-            ))}
-        </div>
-    );
+    const handleCustomChange = (from, to) => {
+        setCustomRange({ from, to });
+        setTimeRange('custom');
+    };
 
     return (
         <div className="space-y-6">
@@ -174,7 +170,13 @@ export const NetworkPage = () => {
                 <div className="lg:col-span-2 glass-panel p-4 flex flex-col min-h-0">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-cyber-muted font-semibold text-sm">Bandwidth History (KB/s)</h3>
-                        <TimeSelector />
+                        <div className="z-10">
+                            <TimeRangeSelector
+                                value={timeRange}
+                                onChange={setTimeRange}
+                                onCustomChange={handleCustomChange}
+                            />
+                        </div>
                     </div>
                     <div className="flex-1 min-h-0">
                         <ResponsiveContainer width="100%" height="100%">
@@ -192,8 +194,12 @@ export const NetworkPage = () => {
                                 <XAxis
                                     dataKey="time"
                                     tick={{ fill: '#94a3b8', fontSize: 10 }}
-                                    tickFormatter={(str) => new Date(str).toLocaleTimeString()}
-                                    interval="preserveStartEnd"
+                                    tickFormatter={(str) => {
+                                        const d = new Date(str);
+                                        return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                                    }}
+                                    interval="preserveEnd"
+                                    minTickGap={60}
                                 />
                                 <YAxis hide />
                                 <Tooltip
