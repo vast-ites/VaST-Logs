@@ -885,6 +885,18 @@ func (h *IngestionHandler) HandleGetServices(c *gin.Context) {
         }
     }
 
+	// 3. Ensure PM2 appears in the Services list since it relies on service metrics heavily rather than standard logs
+	seenPM2 := false
+	for _, s := range services {
+		if s == "pm2" {
+			seenPM2 = true
+			break
+		}
+	}
+	if !seenPM2 { // Add to list for the UI categorization logic
+		services = append(services, "pm2")
+	}
+
     c.Header("X-Debug", "Active")
     c.JSON(http.StatusOK, services)
 }

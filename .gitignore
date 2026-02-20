@@ -9,6 +9,7 @@ server/bin/
 agent/bin/
 agent/datavast-agent
 tools/disk_check
+sample_app.js
 
 # Logs
 *.log

@@ -56,12 +56,14 @@ const Services = () => {
         const lower = name.toLowerCase();
         if (lower.includes('mysql') || lower.includes('postgres') || lower.includes('clickhouse') || lower.includes('mongo') || lower.includes('redis') || lower.includes('influx')) return 'Databases';
         if (lower.includes('nginx') || lower.includes('apache') || lower.includes('caddy') || lower.includes('traefik')) return 'Web Servers';
+        if (lower.includes('pm2') || lower.includes('docker') || lower.includes('systemd')) return 'Process Managers';
         return 'Other Services';
     };
 
     const categories = {
         'Web Servers': { icon: Globe, color: 'text-green-500', items: [] },
         'Databases': { icon: Database, color: 'text-yellow-500', items: [] },
+        'Process Managers': { icon: Activity, color: 'text-purple-500', items: [] },
         'Other Services': { icon: Box, color: 'text-cyber-muted', items: [] }
     };
 
