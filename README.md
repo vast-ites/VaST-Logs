@@ -702,12 +702,12 @@ This project is proprietary software. All rights reserved.
 - [x] Added `ParseTimeRange` utility in the Go backend
 - [x] Wrapped Alert History list in a fixed-height scrollable container
 
-### Upcoming
+#### Phase 43: Service Detail Pages (Enhancements) ✅
+- [x] ClickHouse: query log analysis, mutation tracking, replica lag alerts
+- [x] InfluxDB: per-bucket write rates, cardinality tracking
+- [x] PM2: live testing on Node.js host, restart alerting
 
-#### Service Detail Pages (Enhancements)
-- [ ] ClickHouse: query log analysis, mutation tracking, replica lag alerts
-- [ ] InfluxDB: per-bucket write rates, cardinality tracking
-- [ ] PM2: live testing on Node.js host, restart alerting
+### Upcoming
 
 #### Architecture
 - [ ] Extensible agent module loading

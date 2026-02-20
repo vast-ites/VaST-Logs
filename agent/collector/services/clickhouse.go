@@ -34,6 +34,8 @@ type ClickHouseStats struct {
 	SystemMetrics        map[string]interface{} `json:"system_metrics,omitempty"`
 	SystemEvents         map[string]interface{} `json:"system_events,omitempty"`
 	SystemAsync          map[string]interface{} `json:"system_async,omitempty"`
+	SlowQueries          []map[string]interface{} `json:"slow_queries,omitempty"`
+	Mutations            []map[string]interface{} `json:"mutations,omitempty"`
 }
 
 // NewClickHouseCollector creates a new collector with optional auth
@@ -109,6 +111,18 @@ func (c *ClickHouseCollector) GetStats() (*ClickHouseStats, error) {
         }
     }
 
+	// 6. Query log analysis (Slow queries from system.query_log)
+	slowQueries, err := c.queryMapArray("SELECT query, query_duration_ms, user, memory_usage FROM system.query_log WHERE type = 'QueryFinish' ORDER BY query_duration_ms DESC LIMIT 5")
+	if err == nil {
+		stats.SlowQueries = slowQueries
+	}
+
+	// 7. Mutation tracking (from system.mutations)
+	mutations, err := c.queryMapArray("SELECT database, table, mutation_id, command, is_done, parts_to_do FROM system.mutations WHERE is_done = 0")
+	if err == nil {
+		stats.Mutations = mutations
+	}
+
 	return stats, nil
 }
 
@@ -153,6 +167,23 @@ func (c *ClickHouseCollector) queryMap(sql string) (map[string]interface{}, erro
 		}
 	}
 	return out, nil
+}
+
+// Helper to execute query and return []map[string]interface{}
+func (c *ClickHouseCollector) queryMapArray(sql string) ([]map[string]interface{}, error) {
+	resp, err := c.execQuery(sql + " FORMAT JSON")
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Data []map[string]interface{} `json:"data"`
+	}
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return nil, err
+	}
+
+	return result.Data, nil
 }
 
 // Helper query single int

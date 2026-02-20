@@ -179,12 +179,46 @@ const InfluxDBDetail = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <StatCard
+                            title="Cardinality (Series)"
+                            value={(stats.cardinality || 0).toLocaleString()}
+                            icon={Database}
+                            color="text-green-400"
+                        />
+                        <StatCard
                             title="Uptime"
                             value={`${Math.floor((stats.uptime || 0) / 3600)}h`}
                             icon={Clock}
                         />
-                        {/* Placeholder for future advanced stats */}
-                        <div className="hidden lg:block md:col-span-2 lg:col-span-3"></div>
+                    </div>
+
+                    {/* Bucket Writes */}
+                    <div className="glass-panel p-4">
+                        <h3 className="text-lg font-semibold text-cyber-cyan mb-4 flex items-center gap-2">
+                            <Database className="w-5 h-5 text-yellow-500" />
+                            Per-Bucket Write Rates (Requests)
+                        </h3>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr className="border-b border-cyber-dim text-cyber-muted">
+                                        <th className="p-2">Bucket Name</th>
+                                        <th className="p-2">Write Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {stats.bucket_writes && Object.keys(stats.bucket_writes).length > 0 ? (
+                                        Object.entries(stats.bucket_writes).map(([bucket, count], i) => (
+                                            <tr key={i} className="border-b border-cyber-gray/30">
+                                                <td className="p-2 text-cyber-text font-mono text-cyan-400">{bucket}</td>
+                                                <td className="p-2 text-cyber-muted font-mono">{count.toLocaleString()}</td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr><td colSpan="2" className="p-4 text-center text-cyber-muted">No bucket write metrics available</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </>
             ) : (

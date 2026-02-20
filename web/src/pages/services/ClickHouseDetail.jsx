@@ -196,10 +196,80 @@ const ClickHouseDetail = () => {
                             status={stats.memory_tracking > 1024 * 1024 * 1024 ? 'warning' : 'ok'}
                         />
                         <StatCard
-                            title="Uptime"
-                            value={`${Math.floor((stats.uptime || 0) / 3600)}h`}
+                            title="Replica Lag"
+                            value={`${stats.replicas_max_absolute_delay || 0}s`}
                             icon={RefreshCw}
+                            status={(stats.replicas_max_absolute_delay || 0) > 60 ? 'error' : 'ok'}
                         />
+                    </div>
+
+                    {/* Slow Queries & Mutations */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="glass-panel p-4">
+                            <h3 className="text-lg font-semibold text-cyber-cyan mb-4 flex items-center gap-2">
+                                <Search className="w-5 h-5 text-yellow-500" />
+                                Slow Queries (Query Log)
+                            </h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse text-sm">
+                                    <thead>
+                                        <tr className="border-b border-cyber-dim text-cyber-muted">
+                                            <th className="p-2">Duration (ms)</th>
+                                            <th className="p-2">User</th>
+                                            <th className="p-2">Query</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {stats.slow_queries && stats.slow_queries.length > 0 ? (
+                                            stats.slow_queries.map((sq, i) => (
+                                                <tr key={i} className="border-b border-cyber-gray/30">
+                                                    <td className="p-2 text-yellow-400 font-mono">{sq.query_duration_ms}</td>
+                                                    <td className="p-2 text-cyber-text">{sq.user}</td>
+                                                    <td className="p-2 text-cyber-muted font-mono truncate max-w-[200px]" title={sq.query}>
+                                                        {sq.query}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr><td colSpan="3" className="p-4 text-center text-cyber-muted">No slow queries found</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="glass-panel p-4">
+                            <h3 className="text-lg font-semibold text-cyber-cyan mb-4 flex items-center gap-2">
+                                <Activity className="w-5 h-5 text-purple-400" />
+                                Active Mutations
+                            </h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse text-sm">
+                                    <thead>
+                                        <tr className="border-b border-cyber-dim text-cyber-muted">
+                                            <th className="p-2">Table</th>
+                                            <th className="p-2">Command</th>
+                                            <th className="p-2">Parts To Do</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {stats.mutations && stats.mutations.length > 0 ? (
+                                            stats.mutations.map((mut, i) => (
+                                                <tr key={i} className="border-b border-cyber-gray/30">
+                                                    <td className="p-2 text-cyber-cyan font-mono">{mut.database}.{mut.table}</td>
+                                                    <td className="p-2 text-cyber-muted font-mono truncate max-w-[150px]" title={mut.command}>
+                                                        {mut.command}
+                                                    </td>
+                                                    <td className="p-2 text-red-400">{mut.parts_to_do}</td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr><td colSpan="3" className="p-4 text-center text-cyber-muted">No active mutations</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </>
             ) : (

@@ -180,6 +180,26 @@ const PM2Detail = () => {
                         />
                     </div>
 
+                    {/* Restart Alerting Box */}
+                    {stats.processes && stats.processes.some(p => p.restarts > 10) && (
+                        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
+                            <AlertTriangle className="w-6 h-6 text-red-400 shrink-0 mt-0.5" />
+                            <div>
+                                <h4 className="text-red-400 font-semibold mb-1">Process Restart Alert</h4>
+                                <p className="text-sm text-red-300/80 mb-2">
+                                    One or more processes on this Node.js host are experiencing high restart rates. This indicates continuous crashing or failure during live testing/production.
+                                </p>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {stats.processes.filter(p => p.restarts > 10).map((p, idx) => (
+                                        <span key={idx} className="bg-red-500/20 text-red-200 px-2 py-1 rounded text-xs font-mono border border-red-500/20">
+                                            {p.name} ({p.restarts} restarts)
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Process Table */}
                     <div className="glass-panel p-4">
                         <div className="flex items-center justify-between mb-4">
@@ -214,6 +234,7 @@ const PM2Detail = () => {
                                         <th className="p-2 text-right">Restarts</th>
                                         <th className="p-2 text-right">Uptime</th>
                                         <th className="p-2">Mode</th>
+                                        <th className="p-2">Node v</th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-sm">
@@ -249,6 +270,9 @@ const PM2Detail = () => {
                                                     <span className="px-2 py-0.5 rounded text-xs bg-cyber-gray/30 text-cyber-muted border border-cyber-dim">
                                                         {proc.exec_mode || 'fork'}
                                                     </span>
+                                                </td>
+                                                <td className="p-2 text-green-400 font-mono text-xs">
+                                                    {proc.node_version || 'N/A'}
                                                 </td>
                                             </tr>
                                         ))

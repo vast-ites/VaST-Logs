@@ -28,6 +28,10 @@ type InfluxDBStats struct {
 	HeapUsage      int64     `json:"heap_usage"`
 	Goroutines     int64     `json:"goroutines"`
     
+    // Per-bucket tracking and cardinality
+    BucketWrites   map[string]int64 `json:"bucket_writes,omitempty"`
+    Cardinality    int64            `json:"cardinality"`
+    
     // Raw compatibility
     Metrics map[string]float64 `json:"metrics,omitempty"`
 }
@@ -59,8 +63,9 @@ func (c *InfluxDBCollector) GetStats() (*InfluxDBStats, error) {
 	}
 
 	stats := &InfluxDBStats{
-		Timestamp: time.Now(),
-		Metrics:   make(map[string]float64),
+		Timestamp:    time.Now(),
+		Metrics:      make(map[string]float64),
+		BucketWrites: make(map[string]int64),
 	}
 
 	// Simple Prometheus format parser
@@ -113,6 +118,24 @@ func (c *InfluxDBCollector) GetStats() (*InfluxDBStats, error) {
             stats.Goroutines = int64(val)
         case "influxdb_uptime_seconds":
              stats.Uptime = int64(val)
+        case "storage_series_count", "storage_tsi_series_count":
+             stats.Cardinality += int64(val)
+        }
+        
+        // Track per-bucket write requests
+        if strings.HasPrefix(baseName, "http_api_requests_total") && strings.Contains(name, "path=\"/api/v2/write\"") {
+            // Extract bucket name from label if present e.g., bucket="my-bucket"
+            if strings.Contains(name, "bucket=\"") {
+                start := strings.Index(name, "bucket=\"") + 8
+                end := start + strings.Index(name[start:], "\"")
+                if start > 7 && end > start {
+                    bucket := name[start:end]
+                    stats.BucketWrites[bucket] += int64(val)
+                }
+            } else {
+                // Generic write request without specific bucket label in some versions
+                stats.BucketWrites["system"] += int64(val)
+            }
         }
         
         // Store interesting fields (skip NaN/Inf already filtered above)
