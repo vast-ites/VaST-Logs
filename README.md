@@ -629,10 +629,6 @@ This project is proprietary software. All rights reserved.
 - [x] Production `.env` file with `600` permissions and `EnvironmentFile` in systemd
 
 #### Phase 40: Service Auto-Discovery & Multi-Format Log Parsing ✅
-
-#### Phase 41: Observability & Security Enhancements ✅
-
-#### Phase 42: Custom Historical Date/Time Filtering 🔄
 - [x] Path-based service type inference (`inferServiceType()`) for auto-discovered logs
 - [x] Caddy JSON access log parser in server ingestion handler
 - [x] Traefik CLF access log parsing with web service detection
@@ -657,6 +653,7 @@ This project is proprietary software. All rights reserved.
   - Agent collector parses `pm2 jlist` for CPU, memory, uptime, restarts
   - Route registered in `ServiceDetail.jsx`
 
+#### Phase 41: Observability & Security Enhancements ✅
 <details>
 <summary>Phase 41 — Observability & Security Enhancements</summary>
 
@@ -696,6 +693,14 @@ This project is proprietary software. All rights reserved.
   - Standalone display mode with iOS status bar handling
 
 </details>
+
+#### Phase 42: Custom Historical Date/Time Filtering & Paginated Alert History ✅
+- [x] Introduced a universal `TimeRangeSelector` component to handle custom historical boundaries
+- [x] Integrated the Custom Time Range selector across all service detail views and system metrics
+- [x] Built a native Alert History tab on the primary Alerts Dashboard
+- [x] Implemented high-performance frontend pagination matching a 1000-limit fetch from ClickHouse
+- [x] Added `ParseTimeRange` utility in the Go backend
+- [x] Wrapped Alert History list in a fixed-height scrollable container
 
 ### Upcoming
 
