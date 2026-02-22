@@ -140,6 +140,14 @@ func (h *IPHandler) GetPendingCommands(c *gin.Context) {
 		return
 	}
 
+    // Security Check: Prevent commands spoofing
+    if authAgent, exists := c.Get("agent_id"); exists {
+        if agentID != authAgent.(string) {
+            c.JSON(http.StatusForbidden, gin.H{"error": "Spoofing detected: payload host does not match authenticated agent ID"})
+            return
+        }
+    }
+
 	cmds, err := h.Logs.GetPendingCommands(agentID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
