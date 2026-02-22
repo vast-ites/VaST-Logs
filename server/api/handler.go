@@ -115,6 +115,14 @@ func (h *IngestionHandler) HandleMetrics(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+    // Security Check: Prevent metrics spoofing
+    if agentID, exists := c.Get("agent_id"); exists {
+        if p.Hostname != agentID.(string) {
+            c.JSON(http.StatusForbidden, gin.H{"error": "Spoofing detected: payload host does not match authenticated agent ID"})
+            return
+        }
+    }
 	// Debug Logging for Capacity Metrics
     fmt.Printf("DEBUG INGEST [%s]: CPU_Count=%d Phys=%d Freq=%.2f Parts=%d Ifaces=%d\n", 
         p.Hostname, p.CPUCount, p.CPUPhysical, p.CPUFreq, len(p.Partitions), len(p.Interfaces))
@@ -197,6 +205,14 @@ func (h *IngestionHandler) HandleLogs(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+    // Security Check: Prevent log spoofing
+    if agentID, exists := c.Get("agent_id"); exists {
+        if entry.Host != agentID.(string) {
+            c.JSON(http.StatusForbidden, gin.H{"error": "Spoofing detected: payload host does not match authenticated agent ID"})
+            return
+        }
+    }
 	
 	if entry.Timestamp.IsZero() {
 		entry.Timestamp = time.Now()
@@ -910,6 +926,14 @@ func (h *IngestionHandler) HandleIngestProcesses(c *gin.Context) {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
     }
+
+    // Security Check: Prevent process spoofing
+    if agentID, exists := c.Get("agent_id"); exists {
+        if req.Host != agentID.(string) {
+            c.JSON(http.StatusForbidden, gin.H{"error": "Spoofing detected: payload host does not match authenticated agent ID"})
+            return
+        }
+    }
     
     // Enrich with timestamp/host if missing in items
     ts := time.Now()
@@ -938,6 +962,14 @@ func (h *IngestionHandler) HandleIngestFirewall(c *gin.Context) {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
         return
     }
+
+    // Security Check: Prevent firewall spoofing
+    if agentID, exists := c.Get("agent_id"); exists {
+        if req.Host != agentID.(string) {
+            c.JSON(http.StatusForbidden, gin.H{"error": "Spoofing detected: payload host does not match authenticated agent ID"})
+            return
+        }
+    }
     
     if err := h.Logs.InsertFirewall(time.Now(), req.Host, req.Rules); err != nil {
          c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert firewall rules"})
@@ -961,6 +993,14 @@ func (h *IngestionHandler) HandleIngestFirewallSync(c *gin.Context) {
     if req.Host == "" {
         c.JSON(http.StatusBadRequest, gin.H{"error": "host required"})
         return
+    }
+
+    // Security Check: Prevent firewall sync spoofing
+    if agentID, exists := c.Get("agent_id"); exists {
+        if req.Host != agentID.(string) {
+            c.JSON(http.StatusForbidden, gin.H{"error": "Spoofing detected: payload host does not match authenticated agent ID"})
+            return
+        }
     }
 
     if err := h.Logs.SyncBlockedIPs(req.Host, req.BlockedIPs); err != nil {
@@ -1333,6 +1373,7 @@ func (h *IngestionHandler) HandleDisableMFA(c *gin.Context) {
 }
 
 // AgentSecretAuth validates the X-Agent-Secret header against registered agent secrets
+// and sets the associated AgentID in the context for downstream verification.
 func AgentSecretAuth(config *storage.ConfigStore) gin.HandlerFunc {
     return func(c *gin.Context) {
         secret := c.GetHeader("X-Agent-Secret")
@@ -1341,8 +1382,10 @@ func AgentSecretAuth(config *storage.ConfigStore) gin.HandlerFunc {
             return
         }
         cfg := config.Get()
-        for _, s := range cfg.AgentSecrets {
+        for id, s := range cfg.AgentSecrets {
             if s == secret {
+                // Attach the resolved Agent ID to the context to prevent spoofing
+                c.Set("agent_id", id)
                 c.Next()
                 return
             }
@@ -1661,21 +1704,32 @@ func (h *IngestionHandler) HandleIngestConnections(c *gin.Context) {
         return
     }
 
-    // Enrich with timestamp if missing
-    now := time.Now()
-    for i := range req.Connections {
-        if req.Connections[i].Timestamp.IsZero() {
-            req.Connections[i].Timestamp = now
-        }
-        if req.Connections[i].Host == "" {
-            req.Connections[i].Host = req.Host
+    if req.Host == "" {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "host is required"})
+        return
+    }
+
+    // Security Check: Prevent connection spoofing
+    if agentID, exists := c.Get("agent_id"); exists {
+        if req.Host != agentID.(string) {
+            c.JSON(http.StatusForbidden, gin.H{"error": "Spoofing detected: payload host does not match authenticated agent ID"})
+            return
         }
     }
 
+    // Enrich with processing timestamp
+    ts := time.Now()
+    for i := range req.Connections {
+        req.Connections[i].Timestamp = ts
+        req.Connections[i].Host = req.Host
+    }
+
     if err := h.Logs.InsertConnections(req.Connections); err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert connections"})
+        fmt.Printf("[ERROR] ingest connections: %v\n", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store connections"})
         return
     }
+
     c.Status(http.StatusAccepted)
 
     // Evaluate connection-based alert rules

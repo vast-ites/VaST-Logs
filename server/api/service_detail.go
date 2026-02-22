@@ -331,6 +331,14 @@ func (h *IngestionHandler) HandleIngestServiceStats(c *gin.Context) {
 		return
 	}
 
+    // Security Check: Prevent service spoofing
+    if agentID, exists := c.Get("agent_id"); exists {
+        if entry.Host != agentID.(string) {
+            c.JSON(http.StatusForbidden, gin.H{"error": "Spoofing detected: payload host does not match authenticated agent ID"})
+            return
+        }
+    }
+
 	if entry.Timestamp.IsZero() {
 		entry.Timestamp = time.Now()
 	}
