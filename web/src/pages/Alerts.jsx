@@ -361,13 +361,18 @@ export const Alerts = () => {
                                         } else {
                                             setIsCustomPort(false);
                                             setCustomPort('');
-                                            setNewRule({ ...newRule, metric: e.target.value });
+                                            let nextThreshold = newRule.threshold;
+                                            if (e.target.value === 'agent_offline') nextThreshold = 0;
+                                            else if (newRule.metric === 'agent_offline') nextThreshold = 80;
+
+                                            setNewRule({ ...newRule, metric: e.target.value, threshold: nextThreshold });
                                         }
                                     }}>
                                         <optgroup label="System" className="bg-cyber-background text-cyber-text">
                                             <option value="cpu_percent" className="bg-cyber-background text-cyber-text">CPU Usage (%)</option>
                                             <option value="memory_usage" className="bg-cyber-background text-cyber-text">Memory Usage (%)</option>
                                             <option value="disk_usage" className="bg-cyber-background text-cyber-text">Disk Usage (%)</option>
+                                            <option value="agent_offline" className="bg-cyber-background text-cyber-text">Agent Offline Switch (1 = Offline)</option>
                                         </optgroup>
                                         <optgroup label="Network" className="bg-cyber-background text-cyber-text">
                                             <option value="net_recv_rate" className="bg-cyber-background text-cyber-text">Net Download (B/s)</option>

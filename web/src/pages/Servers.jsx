@@ -39,11 +39,11 @@ export const Servers = () => {
 
                     const metrics = await metricsRes.json();
 
-                    // Determine online status (if metric is recent < 5 minutes)
+                    // Determine online status (if metric is recent < 1 minute to match TopBar)
                     const lastSeen = new Date(metrics.timestamp);
                     const now = new Date();
                     const diff = now - lastSeen;
-                    const isOnline = diff < 300000; // 5 minutes in milliseconds
+                    const isOnline = diff < 60000; // 1 minute in milliseconds
 
                     return {
                         hostname,

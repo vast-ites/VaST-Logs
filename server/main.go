@@ -89,7 +89,7 @@ func main() {
 	// 3. Load Persistent Config
 	config := storage.NewConfigStore("server-config.json")
 	authMgr := auth.NewAuthManager(config)
-	alertMgr := alert.NewAlertService(config, clickh)
+	alertMgr := alert.NewAlertService(config, clickh, influx)
 
 	// Apply configured retention policy to ClickHouse
 	if retDays := config.Get().RetentionDays; retDays > 0 {

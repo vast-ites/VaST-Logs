@@ -12,6 +12,10 @@ tools/disk_check
 sample_app.js
 spoof_test.py
 spoof_test2.py
+spoof_test3.py
+test_get_hosts_agent_token.py
+gen_hash.go
+test_build*
 
 # Logs
 *.log

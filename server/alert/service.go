@@ -16,20 +16,24 @@ import (
 )
 
 type AlertService struct {
-    Config *storage.ConfigStore
-    Logs   *storage.LogStore
+    Config  *storage.ConfigStore
+    Logs    *storage.LogStore
+    Metrics *storage.MetricsStore
     
     // Rate Limiting
     mu            sync.RWMutex
     lastTriggered map[string]time.Time // Key: ruleID|host -> timestamp
 }
 
-func NewAlertService(cfg *storage.ConfigStore, logs *storage.LogStore) *AlertService {
-    return &AlertService{
+func NewAlertService(cfg *storage.ConfigStore, logs *storage.LogStore, metrics *storage.MetricsStore) *AlertService {
+    s := &AlertService{
         Config:        cfg, 
         Logs:          logs,
+        Metrics:       metrics,
         lastTriggered: make(map[string]time.Time),
     }
+    go s.startAgentMonitor()
+    return s
 }
 
 func (s *AlertService) CheckAndAlert(host string, netReceiveRate float64, ddosStatus string) {
@@ -41,6 +45,33 @@ func (s *AlertService) CheckAndAlert(host string, netReceiveRate float64, ddosSt
             return 0.0
         }(),
     }, "")
+}
+
+func (s *AlertService) startAgentMonitor() {
+    ticker := time.NewTicker(30 * time.Second)
+    for range ticker.C {
+        if s.Metrics == nil { continue }
+        
+        hosts, err := s.Metrics.GetHosts()
+        if err != nil || hosts == nil { continue }
+        
+        now := time.Now()
+        for _, h := range hosts {
+            diff := now.Sub(h.LastSeen)
+            // 60 seconds threshold (1 minute) matches frontend isOffline logic
+            isOffline := diff > 60*time.Second 
+            
+            offlineStatus := 0.0
+            if isOffline {
+                offlineStatus = 1.0
+            }
+            
+            // Pass into evaluate rules, just like generic metrics
+            s.EvaluateRules(h.Hostname, map[string]float64{
+                "agent_offline": offlineStatus,
+            }, h.IP)
+        }
+    }
 }
 
 // EvaluateRules checks all active rules against the provided metrics
