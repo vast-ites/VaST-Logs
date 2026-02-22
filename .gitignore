@@ -10,6 +10,8 @@ agent/bin/
 agent/datavast-agent
 tools/disk_check
 sample_app.js
+spoof_test.py
+spoof_test2.py
 
 # Logs
 *.log
