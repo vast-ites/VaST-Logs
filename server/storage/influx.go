@@ -498,6 +498,22 @@ func (m *MetricsStore) GetContainerNames(host string) ([]string, error) {
     return names, nil
 }
 
+// PurgeHost deletes ALL time-series data for a host from InfluxDB.
+func (s *MetricsStore) PurgeHost(host string) error {
+	deleteAPI := s.client.DeleteAPI()
+	// Delete everything from beginning of time to now for this host
+	start := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	stop := time.Now().Add(24 * time.Hour)
+	predicate := fmt.Sprintf(`host="%s"`, host)
+
+	err := deleteAPI.DeleteWithName(context.Background(), s.org, s.bucket, start, stop, predicate)
+	if err != nil {
+		return fmt.Errorf("[PurgeHost/InfluxDB] failed to purge host '%s': %w", host, err)
+	}
+	fmt.Printf("[PurgeHost] Purged all InfluxDB data for host '%s'\n", host)
+	return nil
+}
+
 func (s *MetricsStore) Close() {
 	s.client.Close()
 }

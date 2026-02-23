@@ -86,10 +86,14 @@ export const Servers = () => {
     const onlineCount = agents.filter(a => a.status === 'ONLINE').length;
 
     const deleteHost = async (hostname) => {
-        if (!confirm(`Are you sure you want to remove ${hostname}? It will be hidden from the dashboard.`)) return;
+        if (!confirm(`⚠️ PERMANENT ACTION: Remove "${hostname}"?\n\nThis will:\n• Delete ALL logs, metrics, and history for this server\n• Block future data ingestion from this agent\n\nThis cannot be undone.`)) return;
 
         try {
-            const res = await fetch(`/api/v1/hosts?host=${hostname}`, { method: 'DELETE' });
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/v1/hosts?host=${hostname}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (res.ok) {
                 setAgents(prev => prev.filter(a => a.hostname !== hostname));
             } else {

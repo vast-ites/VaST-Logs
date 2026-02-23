@@ -159,6 +159,13 @@ func (m *BruteforceModule) Start(ctx context.Context) error {
 							Level:     "CRITICAL",
 						})
 
+						// Push security event for alert rule evaluation
+						go m.client.SendSecurityEvent("ssh_bruteforce", map[string]interface{}{
+							"blocked_ip":     ip,
+							"attempt_count":  5,
+							"action":         "blocked",
+						})
+
 						// Optionally reset the counter to prevent duplicate firewall additions 
 						// if the attacker continues spamming the logs before iptables drops the socket completely
                         record.count = 0

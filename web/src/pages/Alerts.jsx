@@ -362,8 +362,8 @@ export const Alerts = () => {
                                             setIsCustomPort(false);
                                             setCustomPort('');
                                             let nextThreshold = newRule.threshold;
-                                            if (e.target.value === 'agent_offline') nextThreshold = 0;
-                                            else if (newRule.metric === 'agent_offline') nextThreshold = 80;
+                                            if (e.target.value === 'agent_offline' || e.target.value === 'ssh_bruteforce') nextThreshold = 0;
+                                            else if (newRule.metric === 'agent_offline' || newRule.metric === 'ssh_bruteforce') nextThreshold = 80;
 
                                             setNewRule({ ...newRule, metric: e.target.value, threshold: nextThreshold });
                                         }
@@ -373,6 +373,9 @@ export const Alerts = () => {
                                             <option value="memory_usage" className="bg-cyber-background text-cyber-text">Memory Usage (%)</option>
                                             <option value="disk_usage" className="bg-cyber-background text-cyber-text">Disk Usage (%)</option>
                                             <option value="agent_offline" className="bg-cyber-background text-cyber-text">Agent Offline Switch (1 = Offline)</option>
+                                        </optgroup>
+                                        <optgroup label="Security" className="bg-cyber-background text-cyber-text">
+                                            <option value="ssh_bruteforce" className="bg-cyber-background text-cyber-text">SSH Brute-Force Block (1 = Blocked)</option>
                                         </optgroup>
                                         <optgroup label="Network" className="bg-cyber-background text-cyber-text">
                                             <option value="net_recv_rate" className="bg-cyber-background text-cyber-text">Net Download (B/s)</option>

@@ -218,3 +218,18 @@ func (c *Client) SendServiceStats(service, statsJSON string) error {
     }
     return c.post("/ingest/service-stats", data)
 }
+
+// SendSecurityEvent pushes a security event (e.g. SSH brute-force block) to the server
+// so it can be evaluated against alert rules and appear in alert history.
+func (c *Client) SendSecurityEvent(eventType string, details map[string]interface{}) error {
+    payload := map[string]interface{}{
+        "host":       c.Hostname,
+        "event_type": eventType,
+        "details":    details,
+    }
+    data, err := json.Marshal(payload)
+    if err != nil {
+        return err
+    }
+    return c.post("/ingest/security-event", data)
+}

@@ -465,25 +465,42 @@ func (h *IngestionHandler) HandleDeleteHost(c *gin.Context) {
         c.JSON(http.StatusBadRequest, gin.H{"error": "Host required"})
         return
     }
-    
-    // Add to ignored list
-    cfg := h.Config.Get()
-    
-    // Check if already ignored
-    for _, h := range cfg.IgnoredHosts {
-        if h == host {
-             c.Status(http.StatusOK)
-             return
+
+    log.Printf("[Admin] Removing server '%s' — purging all data...", host)
+
+    // 1. Purge all historical data from ClickHouse
+    if h.Logs != nil {
+        if err := h.Logs.PurgeHost(host); err != nil {
+            log.Printf("[Admin] ClickHouse purge warning for '%s': %v", host, err)
         }
     }
-    
-    cfg.IgnoredHosts = append(cfg.IgnoredHosts, host)
-    if err := h.Config.Save(cfg); err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save config"})
-        return
+
+    // 2. Purge all time-series data from InfluxDB
+    if h.Metrics != nil {
+        if err := h.Metrics.PurgeHost(host); err != nil {
+            log.Printf("[Admin] InfluxDB purge warning for '%s': %v", host, err)
+        }
     }
-    
-    c.Status(http.StatusOK)
+
+    // 3. Add to ignored list so future data from this agent is rejected
+    cfg := h.Config.Get()
+    alreadyIgnored := false
+    for _, h := range cfg.IgnoredHosts {
+        if h == host {
+            alreadyIgnored = true
+            break
+        }
+    }
+    if !alreadyIgnored {
+        cfg.IgnoredHosts = append(cfg.IgnoredHosts, host)
+        if err := h.Config.Save(cfg); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Data purged but failed to save config"})
+            return
+        }
+    }
+
+    log.Printf("[Admin] Server '%s' fully removed — all data purged, future ingestion blocked.", host)
+    c.JSON(http.StatusOK, gin.H{"status": "purged", "host": host})
 }
 
 func SetupRoutes(r *gin.Engine, h *IngestionHandler) {
@@ -505,6 +522,7 @@ func SetupRoutes(r *gin.Engine, h *IngestionHandler) {
             agentRoutes.POST("/ingest/firewall", h.HandleIngestFirewall)
             agentRoutes.POST("/ingest/connections", h.HandleIngestConnections)
             agentRoutes.POST("/ingest/service-stats", h.HandleIngestServiceStats)
+            agentRoutes.POST("/ingest/security-event", h.HandleIngestSecurityEvent)
         }
 
         // User-facing endpoints (optional auth based on AUTH_ENABLED)

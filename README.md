@@ -707,14 +707,15 @@ This project is proprietary software. All rights reserved.
 - [x] InfluxDB: per-bucket write rates, cardinality tracking
 - [x] PM2: live testing on Node.js host, restart alerting
 
-### Upcoming
-
 #### Phase 44: Architecture ✅
 - [x] Extensible agent module loading
 - [x] SSH brute-force detection
 - [x] Automated IP blocking remediation
 
 > **Extensible Agent Architecture:** The agent is designed to be fully extensible. New functionality is added as separate modules under `agent/modules/<name>/`, not by modifying the agent's core logic (`main.go`). Each module implements the `AgentModule` interface (`Name`, `ShouldEnable`, `Init`, `Start`) and self-registers via `init()`. A central loader (`agent/modules/all/all.go`) is the **only** file that needs a new import line when adding a module — `main.go` never changes. Modules auto-detect whether they should activate (e.g. SSH module checks if `/var/log/auth.log` exists). This means new capabilities like log file parsing, anomaly detection, or certificate monitoring can be written in a new file and loaded dynamically without changing the agent itself.
+
+### Upcoming
+
 
 #### Integrations
 - [ ] Kubernetes support

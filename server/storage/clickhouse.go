@@ -1216,3 +1216,46 @@ func (s *LogStore) GetLatestServiceStats(host, service string, start, end time.T
 	}
 	return stats, ts, nil
 }
+
+// PurgeHost deletes ALL data for the given hostname from every ClickHouse table.
+// This is a destructive operation called when an admin removes a server from the fleet.
+func (s *LogStore) PurgeHost(host string) error {
+	ctx := context.Background()
+
+	// Tables that use `host` column
+	hostTables := []string{
+		"datavast.logs",
+		"datavast.processes",
+		"datavast.firewall",
+		"datavast.access_logs",
+		"datavast.access_logs_1m",
+		"datavast.alerts",
+		"datavast.connections",
+		"datavast.service_stats",
+	}
+
+	for _, table := range hostTables {
+		query := fmt.Sprintf("ALTER TABLE %s DELETE WHERE host = ?", table)
+		if err := s.conn.Exec(ctx, query, host); err != nil {
+			log.Printf("[PurgeHost] Warning: failed to purge %s from %s: %v", host, table, err)
+		}
+	}
+
+	// Tables that use `agent_id` column
+	agentTables := []string{
+		"datavast.blocked_ips",
+		"datavast.agent_commands",
+		"datavast.ip_activity_daily",
+	}
+
+	for _, table := range agentTables {
+		query := fmt.Sprintf("ALTER TABLE %s DELETE WHERE agent_id = ?", table)
+		if err := s.conn.Exec(ctx, query, host); err != nil {
+			log.Printf("[PurgeHost] Warning: failed to purge %s from %s: %v", host, table, err)
+		}
+	}
+
+	// IP geo cache does not have a host column, skip it
+	log.Printf("[PurgeHost] Purged all data for host '%s' from ClickHouse", host)
+	return nil
+}

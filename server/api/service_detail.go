@@ -377,3 +377,38 @@ func (h *IngestionHandler) HandleGetServiceDBStats(c *gin.Context) {
 		`{"stats":%s,"timestamp":"%s"}`, statsJSON, ts.Format(time.RFC3339))))
 }
 
+// HandleIngestSecurityEvent receives security events from agent modules
+// (e.g. SSH brute-force blocks) and feeds them into the alert evaluation engine.
+func (h *IngestionHandler) HandleIngestSecurityEvent(c *gin.Context) {
+	var req struct {
+		Host      string                 `json:"host"`
+		EventType string                 `json:"event_type"`
+		Details   map[string]interface{} `json:"details"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Security Check: Prevent spoofing
+	if agentID, exists := c.Get("agent_id"); exists {
+		if req.Host != agentID.(string) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Spoofing detected"})
+			return
+		}
+	}
+
+	// Feed into alert evaluation engine
+	if h.Alerts != nil {
+		metrics := map[string]float64{
+			req.EventType: 1.0,
+		}
+		blockedIP := ""
+		if ip, ok := req.Details["blocked_ip"].(string); ok {
+			blockedIP = ip
+		}
+		h.Alerts.EvaluateRules(req.Host, metrics, blockedIP)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
