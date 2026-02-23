@@ -23,6 +23,9 @@ import (
 	"github.com/datavast/datavast/agent/discovery"
 	"github.com/datavast/datavast/agent/sender"
     "github.com/datavast/datavast/agent/config"
+
+    "github.com/datavast/datavast/agent/modules"
+    _ "github.com/datavast/datavast/agent/modules/ssh_bruteforce"
 )
 
 func main() {
@@ -328,6 +331,12 @@ func main() {
             }
         }
     }()
+
+	// Start Extensible Modules
+    fmt.Println(">> Initializing Extensible Module Plugins...")
+    modCtx, modCancel := context.WithCancel(context.Background())
+    defer modCancel()
+    modules.StartAll(modCtx, cfg, senderClient)
 
 	// 4. Async Process Raw Collection (Decoupled from Main Loop to prevent lag)
     var atomicProcessRaw atomic.Value

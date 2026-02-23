@@ -709,10 +709,10 @@ This project is proprietary software. All rights reserved.
 
 ### Upcoming
 
-#### Architecture
-- [ ] Extensible agent module loading
-- [ ] SSH brute-force detection
-- [ ] Automated IP blocking remediation
+#### Phase 44: Architecture (Active)
+- [x] Extensible agent module loading
+- [x] SSH brute-force detection
+- [x] Automated IP blocking remediation
 
 #### Integrations
 - [ ] Kubernetes support
