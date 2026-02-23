@@ -249,10 +249,24 @@ func FindServiceLogs(service string) []DiscoveredLog {
         matches, _ := filepath.Glob(pattern)
         for _, path := range matches {
             if canRead(path) {
+                sourceType := service
+                if service == "pm2" {
+                    baseFile := filepath.Base(path)
+                    // pm2 log files format: app-name-out.log or app-name-error.log
+                    baseFile = strings.TrimSuffix(baseFile, ".log")
+                    if strings.HasSuffix(baseFile, "-out") {
+                        baseFile = strings.TrimSuffix(baseFile, "-out")
+                    } else if strings.HasSuffix(baseFile, "-error") {
+                        baseFile = strings.TrimSuffix(baseFile, "-error")
+                    } else if strings.HasSuffix(baseFile, "-err") {
+                        baseFile = strings.TrimSuffix(baseFile, "-err")
+                    }
+                    sourceType = baseFile
+                }
                 logs = append(logs, DiscoveredLog{
                     Path: path,
-                    SourceType: service,
-                    ProcessName: service,
+                    SourceType: sourceType,
+                    ProcessName: sourceType,
                 })
             }
         }
