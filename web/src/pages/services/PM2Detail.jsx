@@ -27,6 +27,7 @@ const PM2Detail = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshRate, setRefreshRate] = useState(5);
+    const [expandedProc, setExpandedProc] = useState(null);
 
     const fetchData = async () => {
         try {
@@ -246,35 +247,78 @@ const PM2Detail = () => {
                                         </tr>
                                     ) : (
                                         stats.processes.map((proc, i) => (
-                                            <tr key={i} className="border-b border-cyber-gray/30 hover:bg-cyber-gray/10 transition-colors">
-                                                <td className="p-2 text-cyber-muted font-mono">{proc.pm_id}</td>
-                                                <td className="p-2 text-cyber-text font-semibold">{proc.name}</td>
-                                                <td className="p-2"><StatusBadge status={proc.status} /></td>
-                                                <td className="p-2 text-right font-mono">
-                                                    <span className={proc.cpu > 80 ? 'text-red-400' : proc.cpu > 50 ? 'text-yellow-400' : 'text-cyber-text'}>
-                                                        {(proc.cpu || 0).toFixed(1)}%
-                                                    </span>
-                                                </td>
-                                                <td className="p-2 text-right font-mono text-cyber-text">
-                                                    {formatBytes(proc.memory)}
-                                                </td>
-                                                <td className="p-2 text-right font-mono">
-                                                    <span className={proc.restarts > 10 ? 'text-red-400' : proc.restarts > 0 ? 'text-yellow-400' : 'text-cyber-muted'}>
-                                                        {proc.restarts}
-                                                    </span>
-                                                </td>
-                                                <td className="p-2 text-right text-cyber-muted">
-                                                    {formatUptime(proc.uptime)}
-                                                </td>
-                                                <td className="p-2">
-                                                    <span className="px-2 py-0.5 rounded text-xs bg-cyber-gray/30 text-cyber-muted border border-cyber-dim">
-                                                        {proc.exec_mode || 'fork'}
-                                                    </span>
-                                                </td>
-                                                <td className="p-2 text-green-400 font-mono text-xs">
-                                                    {proc.node_version || 'N/A'}
-                                                </td>
-                                            </tr>
+                                            <React.Fragment key={i}>
+                                                <tr
+                                                    onClick={() => setExpandedProc(expandedProc === proc.pm_id ? null : proc.pm_id)}
+                                                    className="border-b border-cyber-gray/30 hover:bg-cyber-gray/10 transition-colors cursor-pointer"
+                                                >
+                                                    <td className="p-2 text-cyber-muted font-mono">{proc.pm_id}</td>
+                                                    <td className="p-2 text-cyber-text font-semibold">{proc.name}</td>
+                                                    <td className="p-2"><StatusBadge status={proc.status} /></td>
+                                                    <td className="p-2 text-right font-mono">
+                                                        <span className={proc.cpu > 80 ? 'text-red-400' : proc.cpu > 50 ? 'text-yellow-400' : 'text-cyber-text'}>
+                                                            {(proc.cpu || 0).toFixed(1)}%
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-2 text-right font-mono text-cyber-text">
+                                                        {formatBytes(proc.memory)}
+                                                    </td>
+                                                    <td className="p-2 text-right font-mono">
+                                                        <span className={proc.restarts > 10 ? 'text-red-400' : proc.restarts > 0 ? 'text-yellow-400' : 'text-cyber-muted'}>
+                                                            {proc.restarts}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-2 text-right text-cyber-muted">
+                                                        {formatUptime(proc.uptime)}
+                                                    </td>
+                                                    <td className="p-2">
+                                                        <span className="px-2 py-0.5 rounded text-xs bg-cyber-gray/30 text-cyber-muted border border-cyber-dim">
+                                                            {proc.exec_mode || 'fork'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-2 text-green-400 font-mono text-xs">
+                                                        {proc.node_version || 'N/A'}
+                                                    </td>
+                                                </tr>
+                                                {expandedProc === proc.pm_id && (
+                                                    <tr className="bg-cyber-gray/5 border-b border-cyber-gray/30">
+                                                        <td colSpan="9" className="p-4">
+                                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                                                <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                                                    <div>
+                                                                        <span className="block text-xs text-cyber-muted uppercase">Instances</span>
+                                                                        <span className="font-mono text-cyber-text text-sm font-semibold">{proc.instances || 1}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="block text-xs text-cyber-muted uppercase">Node Version</span>
+                                                                        <span className="font-mono text-cyber-text text-sm">{proc.node_version || 'N/A'}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="block text-xs text-cyber-muted uppercase">Memory Used</span>
+                                                                        <span className="font-mono text-cyber-text text-sm">{formatBytes(proc.memory)}</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="block text-xs text-cyber-muted uppercase">Uptime</span>
+                                                                        <span className="font-mono text-cyber-text text-sm">{formatUptime(proc.uptime)}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            navigate(`/logs?host=${host || ''}&process=${encodeURIComponent(proc.name)}`);
+                                                                        }}
+                                                                        className="flex items-center gap-2 px-4 py-2 bg-cyan-600/80 hover:bg-cyan-500 text-white rounded transition text-sm font-semibold"
+                                                                    >
+                                                                        <Monitor size={16} />
+                                                                        View Logs
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </React.Fragment>
                                         ))
                                     )}
                                 </tbody>
