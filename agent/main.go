@@ -25,7 +25,7 @@ import (
     "github.com/datavast/datavast/agent/config"
 
     "github.com/datavast/datavast/agent/modules"
-    _ "github.com/datavast/datavast/agent/modules/ssh_bruteforce"
+    _ "github.com/datavast/datavast/agent/modules/all"
 )
 
 func main() {
@@ -333,7 +333,6 @@ func main() {
     }()
 
 	// Start Extensible Modules
-    fmt.Println(">> Initializing Extensible Module Plugins...")
     modCtx, modCancel := context.WithCancel(context.Background())
     defer modCancel()
     modules.StartAll(modCtx, cfg, senderClient)
