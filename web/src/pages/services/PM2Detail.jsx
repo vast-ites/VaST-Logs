@@ -283,37 +283,47 @@ const PM2Detail = () => {
                                                 {expandedProc === proc.pm_id && (
                                                     <tr className="bg-cyber-gray/5 border-b border-cyber-gray/30">
                                                         <td colSpan="9" className="p-4">
-                                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                                                <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                                                    <div>
-                                                                        <span className="block text-xs text-cyber-muted uppercase">Instances</span>
-                                                                        <span className="font-mono text-cyber-text text-sm font-semibold">{proc.instances || 1}</span>
+                                                            <div className="flex flex-col gap-4 w-full">
+                                                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                                                    <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                                                        <div>
+                                                                            <span className="block text-xs text-cyber-muted uppercase">Instances</span>
+                                                                            <span className="font-mono text-cyber-text text-sm font-semibold">{proc.instances || 1}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="block text-xs text-cyber-muted uppercase">Node Version</span>
+                                                                            <span className="font-mono text-cyber-text text-sm">{proc.node_version || 'N/A'}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="block text-xs text-cyber-muted uppercase">Memory Used</span>
+                                                                            <span className="font-mono text-cyber-text text-sm">{formatBytes(proc.memory)}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="block text-xs text-cyber-muted uppercase">Uptime</span>
+                                                                            <span className="font-mono text-cyber-text text-sm">{formatUptime(proc.uptime)}</span>
+                                                                        </div>
                                                                     </div>
                                                                     <div>
-                                                                        <span className="block text-xs text-cyber-muted uppercase">Node Version</span>
-                                                                        <span className="font-mono text-cyber-text text-sm">{proc.node_version || 'N/A'}</span>
-                                                                    </div>
-                                                                    <div>
-                                                                        <span className="block text-xs text-cyber-muted uppercase">Memory Used</span>
-                                                                        <span className="font-mono text-cyber-text text-sm">{formatBytes(proc.memory)}</span>
-                                                                    </div>
-                                                                    <div>
-                                                                        <span className="block text-xs text-cyber-muted uppercase">Uptime</span>
-                                                                        <span className="font-mono text-cyber-text text-sm">{formatUptime(proc.uptime)}</span>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                navigate(`/logs?host=${host || ''}&process=${encodeURIComponent(proc.name)}`);
+                                                                            }}
+                                                                            className="flex items-center gap-2 px-4 py-2 bg-cyan-600/80 hover:bg-cyan-500 text-white rounded transition text-sm font-semibold"
+                                                                        >
+                                                                            <Monitor size={16} />
+                                                                            View Logs
+                                                                        </button>
                                                                     </div>
                                                                 </div>
-                                                                <div>
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            navigate(`/logs?host=${host || ''}&process=${encodeURIComponent(proc.name)}`);
-                                                                        }}
-                                                                        className="flex items-center gap-2 px-4 py-2 bg-cyan-600/80 hover:bg-cyan-500 text-white rounded transition text-sm font-semibold"
-                                                                    >
-                                                                        <Monitor size={16} />
-                                                                        View Logs
-                                                                    </button>
-                                                                </div>
+                                                                {proc.raw_info && (
+                                                                    <div className="mt-4 bg-black/50 border border-cyber-dim rounded-lg p-4 overflow-x-auto">
+                                                                        <h4 className="text-cyber-cyan text-xs font-bold uppercase mb-2">Raw CLI Output</h4>
+                                                                        <pre className="text-[10px] text-cyber-muted font-mono leading-tight whitespace-pre">
+                                                                            {proc.raw_info}
+                                                                        </pre>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </td>
                                                     </tr>

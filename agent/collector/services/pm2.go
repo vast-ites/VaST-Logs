@@ -22,6 +22,7 @@ type PM2Process struct {
 	Instances int     `json:"instances"`
 	ExecMode  string  `json:"exec_mode"`
 	NodeVersion string `json:"node_version,omitempty"`
+	RawInfo   string  `json:"raw_info,omitempty"`
 }
 
 // PM2Stats represents the collected PM2 metrics
@@ -47,11 +48,15 @@ func NewPM2Collector() *PM2Collector {
 
 // GetStats collects PM2 process list via `pm2 jlist` for all users
 func (c *PM2Collector) GetStats() (*PM2Stats, error) {
-	rawOutputs := make([][]byte, 0)
+	type pm2Output struct {
+		User string
+		Data []byte
+	}
+	rawOutputs := make([]pm2Output, 0)
 
 	// Keep track of the current user's pm2 first (usually root)
 	if out, err := exec.Command("pm2", "jlist").Output(); err == nil {
-		rawOutputs = append(rawOutputs, out)
+		rawOutputs = append(rawOutputs, pm2Output{User: "", Data: out})
 	}
 
 	// Try to find users with a .pm2 folder in /home
@@ -64,7 +69,7 @@ func (c *PM2Collector) GetStats() (*PM2Stats, error) {
 				// Execute pm2 jlist for this user. "su -" ensures login shell config loads PATH (nvm)
 				cmd := exec.Command("su", "-", user, "-c", "pm2 jlist")
 				if out, err := cmd.Output(); err == nil {
-					rawOutputs = append(rawOutputs, out)
+					rawOutputs = append(rawOutputs, pm2Output{User: user, Data: out})
 				}
 			}
 		}
@@ -100,7 +105,7 @@ func (c *PM2Collector) GetStats() (*PM2Stats, error) {
 			} `json:"monit"`
 		}
 
-		if err := json.Unmarshal(out, &rawProcesses); err != nil {
+		if err := json.Unmarshal(out.Data, &rawProcesses); err != nil {
 			continue // skip failing unmarshals (e.g. motd prints before json)
 		}
 
@@ -117,6 +122,15 @@ func (c *PM2Collector) GetStats() (*PM2Stats, error) {
 				ExecMode:    rp.PM2Env.ExecMode,
 				NodeVersion: rp.PM2Env.NodeVersion,
 			}
+
+			// Collect raw pm2 info output
+			var rawInfo []byte
+			if out.User == "" {
+				rawInfo, _ = exec.Command("pm2", "info", fmt.Sprintf("%d", rp.PMID), "--no-color").Output()
+			} else {
+				rawInfo, _ = exec.Command("su", "-", out.User, "-c", fmt.Sprintf("pm2 info %d --no-color", rp.PMID)).Output()
+			}
+			proc.RawInfo = string(rawInfo)
 
 			if rp.PM2Env.PMUptime > 0 {
 				proc.Uptime = (now - rp.PM2Env.PMUptime) / 1000

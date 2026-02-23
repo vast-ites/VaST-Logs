@@ -15,6 +15,7 @@ spoof_test2.py
 spoof_test3.py
 test_get_hosts_agent_token.py
 gen_hash.go
+get_totp.go
 test_build*
 
 # Logs
