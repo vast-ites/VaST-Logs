@@ -21,6 +21,7 @@ const Logs = () => {
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const svc = params.get('service');
+        const prc = params.get('process'); // Added support for ?process= via GitHub Issue
         const hst = params.get('host');
 
         if (hst && setSelectedHost) {
@@ -28,6 +29,8 @@ const Logs = () => {
         }
         if (svc) {
             setFilterService(svc);
+        } else if (prc) {
+            setFilterService(prc);
         }
     }, [location.search, setSelectedHost]);
 
