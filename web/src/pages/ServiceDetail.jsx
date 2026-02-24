@@ -41,6 +41,7 @@ const ServiceDetail = () => {
         'mariadb': MySQLDetail,
         'postgresql': PostgreSQLDetail,
         'postgres': PostgreSQLDetail,
+        'vastify_postgres': PostgreSQLDetail,
         'redis': RedisDetail,
         'mongodb': MongoDBDetail,
         'mongod': MongoDBDetail,
@@ -54,7 +55,7 @@ const ServiceDetail = () => {
     const Component = serviceComponents[serviceName.toLowerCase()];
 
     if (Component) {
-        return <Component />;
+        return <Component serviceName={serviceName} />;
     }
 
     // Fallback for unsupported services

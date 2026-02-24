@@ -1,6 +1,6 @@
 import { useHost } from '../../contexts/HostContext';
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Database, Activity, Lock, AlertCircle, HardDrive, Clock, AlertTriangle } from 'lucide-react';
 import StatCard from '../../components/service/StatCard';
 import ChartPanel from '../../components/service/ChartPanel';
@@ -12,6 +12,11 @@ import { TablesWithoutIndexes, HighIOTables, SlowQueries } from '../../component
 const PostgreSQLDetail = () => {
     const { selectedHost } = useHost();
     const navigate = useNavigate();
+    const { serviceName } = useParams();
+
+    // Always query 'postgresql' as agent sends the correct stats under this name now
+    const activeService = 'postgresql';
+
     const [timeRange, setTimeRange] = useState('5m');
     const [customRange, setCustomRange] = useState({ from: null, to: null });
     const [refreshRate, setRefreshRate] = useState(5);
@@ -29,7 +34,7 @@ const PostgreSQLDetail = () => {
                 timeParams = `duration=custom&from=${encodeURIComponent(customRange.from)}&to=${encodeURIComponent(customRange.to)}`;
             }
 
-            const res = await fetch(`/api/v1/services/postgresql/db-stats?${timeParams}&host=${selectedHost || ''}`, { headers });
+            const res = await fetch(`/api/v1/services/${activeService}/db-stats?${timeParams}&host=${selectedHost || ''}`, { headers });
             if (res.ok) {
                 const data = await res.json();
                 if (data.stats) {
