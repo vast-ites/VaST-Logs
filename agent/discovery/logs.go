@@ -241,8 +241,7 @@ func FindServiceLogs(service string) []DiscoveredLog {
     case "traefik":
         patterns = []string{"/var/log/traefik/*.log"}
     case "pm2":
-        home, _ := os.UserHomeDir()
-        patterns = []string{filepath.Join(home, ".pm2/logs/*.log")}
+        patterns = []string{"/root/.pm2/logs/*.log", "/home/*/.pm2/logs/*.log"}
     }
     
     for _, pattern := range patterns {
