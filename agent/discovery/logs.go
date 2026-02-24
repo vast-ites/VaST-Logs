@@ -253,6 +253,14 @@ func FindServiceLogs(service string) []DiscoveredLog {
                     baseFile := filepath.Base(path)
                     // pm2 log files format: app-name-out.log or app-name-error.log
                     baseFile = strings.TrimSuffix(baseFile, ".log")
+                    
+                    // Strip off instance IDs if present (e.g. hotel-management-out-10)
+                    if idx := strings.LastIndex(baseFile, "-"); idx != -1 {
+                        if _, err := strconv.Atoi(baseFile[idx+1:]); err == nil {
+                            baseFile = baseFile[:idx]
+                        }
+                    }
+
                     if strings.HasSuffix(baseFile, "-out") {
                         baseFile = strings.TrimSuffix(baseFile, "-out")
                     } else if strings.HasSuffix(baseFile, "-error") {
