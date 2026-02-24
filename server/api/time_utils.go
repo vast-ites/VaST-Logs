@@ -62,11 +62,12 @@ func ParseTimeRange(durationStr, fromStr, toStr string) (string, time.Time, time
         }
     }
 
-    // Fallback to duration (relative time)
     if durationStr == "" {
         durationStr = "15m"
     } else if durationStr == "custom" {
         durationStr = "1h" // Graceful fallback for incomplete custom range requests
+    } else if durationStr == "realtime" {
+        durationStr = "1m" // Realtime mode only needs trailing minute of data
     }
 
     d, err := time.ParseDuration(durationStr)
