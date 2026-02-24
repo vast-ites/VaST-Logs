@@ -639,19 +639,17 @@ type dbProbe struct {
 }
 
 func startServiceCollectors(client *sender.Client, cfg *config.AgentConfig) {
-	pgDockerPort := "5433"
-	if cfg.PostgresPort != "" && cfg.PostgresPort != "5432" {
+	pgDockerPort := "5432"
+	if cfg.PostgresPort != "" {
 		pgDockerPort = cfg.PostgresPort
 	}
 
 	probes := []dbProbe{
 		{"mysql", "127.0.0.1:3306", "3306"},
 		{"redis", "127.0.0.1:6379", "6379"},
-		{"postgresql", "127.0.0.1:5432", "5432"},
-		{"vastify_postgres", "127.0.0.1:" + pgDockerPort, pgDockerPort},
+		{"postgresql", "127.0.0.1:" + pgDockerPort, pgDockerPort},
 		{"mongodb", "127.0.0.1:27017", "27017"},
 		{"clickhouse", "127.0.0.1:8123", "8123"},
-
 		{"influxdb", "127.0.0.1:8086", "8086"},
 	}
 
@@ -695,8 +693,6 @@ func collectDBStats(client *sender.Client, activeServices []dbProbe, cfg *config
 		case "redis":
 			statsJSON, err = collectRedisStats()
 		case "postgresql":
-			statsJSON, err = collectPostgreSQLStats("5432", "postgres", "", "postgres")
-		case "vastify_postgres":
 			statsJSON, err = collectPostgreSQLStats(svc.port, cfg.PostgresUser, cfg.PostgresPassword, cfg.PostgresDB)
 		case "mongodb":
 			statsJSON, err = collectMongoDBStats()

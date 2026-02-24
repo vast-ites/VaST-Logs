@@ -88,6 +88,7 @@ const Services = () => {
         // Skip internal types
         if (internalTypes.includes(item.name)) return;
         if (item.name === 'apache2') return; // Hide legacy/duplicate service name
+        if (item.name === 'vastify_postgres') return; // Hide vastify_postgres since it's mapped to postgresql
 
         // Filter by selected host (if a specific host is selected)
         if (selectedHost && item.host !== selectedHost) return;

@@ -18,11 +18,12 @@ gen_hash.go
 get_totp.go
 test_build*
 test_parse.go
-
+mfa.go
 # Logs
 *.log
 wget-log*
 *.out
+tmp-agent-config-dedicated.json
 
 # Build Artifacts
 web/dist
