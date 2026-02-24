@@ -34,7 +34,8 @@ if [ -z "$HOST" ]; then
 fi
 
 if [ -z "$SERVER_URL" ]; then
-    SERVER_URL="https://your-domain.com:8080"
+    echo "❌ Error: --server-url is required. Please specify the central server URL (e.g. --server-url=https://your-domain.com:8080)"
+    exit 1
 fi
 
 echo "🚀 Installing DataVAST Agent for host: $HOST"
