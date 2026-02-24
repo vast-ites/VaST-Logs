@@ -30,10 +30,23 @@ const Services = () => {
                 const allServices = [];
                 for (const host of hostsData) {
                     try {
+                        const pm2Apps = new Set();
+                        try {
+                            const pm2Res = await fetch(`/api/v1/services/pm2/db-stats?host=${host.hostname}&duration=5m`, { headers });
+                            if (pm2Res.ok) {
+                                const pmData = await pm2Res.json();
+                                if (pmData.stats && pmData.stats.processes) {
+                                    pmData.stats.processes.forEach(p => pm2Apps.add(p.name));
+                                }
+                            }
+                        } catch (e) { }
+
                         const svcRes = await fetch(`/api/v1/logs/services?host=${host.hostname}`, { headers });
                         const servicesList = await svcRes.json();
                         servicesList.forEach(s => {
-                            allServices.push({ name: s, host: host.hostname });
+                            if (!pm2Apps.has(s)) {
+                                allServices.push({ name: s, host: host.hostname });
+                            }
                         });
                     } catch (e) {
                         console.error(`Failed to fetch services for ${host.hostname}`, e);

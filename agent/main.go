@@ -638,14 +638,20 @@ type dbProbe struct {
 	port    string
 }
 
-// startServiceCollectors auto-detects running database services and periodically collects their metrics.
 func startServiceCollectors(client *sender.Client, cfg *config.AgentConfig) {
+	pgDockerPort := "5433"
+	if cfg.PostgresPort != "" && cfg.PostgresPort != "5432" {
+		pgDockerPort = cfg.PostgresPort
+	}
+
 	probes := []dbProbe{
 		{"mysql", "127.0.0.1:3306", "3306"},
 		{"redis", "127.0.0.1:6379", "6379"},
 		{"postgresql", "127.0.0.1:5432", "5432"},
+		{"vastify_postgres", "127.0.0.1:" + pgDockerPort, pgDockerPort},
 		{"mongodb", "127.0.0.1:27017", "27017"},
 		{"clickhouse", "127.0.0.1:8123", "8123"},
+
 		{"influxdb", "127.0.0.1:8086", "8086"},
 	}
 
@@ -689,7 +695,9 @@ func collectDBStats(client *sender.Client, activeServices []dbProbe, cfg *config
 		case "redis":
 			statsJSON, err = collectRedisStats()
 		case "postgresql":
-			statsJSON, err = collectPostgreSQLStats(cfg)
+			statsJSON, err = collectPostgreSQLStats("5432", "postgres", "", "postgres")
+		case "vastify_postgres":
+			statsJSON, err = collectPostgreSQLStats(svc.port, cfg.PostgresUser, cfg.PostgresPassword, cfg.PostgresDB)
 		case "mongodb":
 			statsJSON, err = collectMongoDBStats()
 		case "clickhouse":
@@ -801,17 +809,22 @@ func collectRedisStats() (string, error) {
 	return string(data), err
 }
 
-func collectPostgreSQLStats(cfg *config.AgentConfig) (string, error) {
-	user := "postgres"
-	if cfg.PostgresUser != "" {
-		user = cfg.PostgresUser
+func collectPostgreSQLStats(port string, user string, passStr string, dbName string) (string, error) {
+	if user == "" {
+		user = "postgres"
 	}
 	pass := ""
-	if cfg.PostgresPassword != "" {
-		pass = ":" + cfg.PostgresPassword
+	if passStr != "" {
+		pass = ":" + passStr
+	}
+	if port == "" {
+		port = "5432"
+	}
+	if dbName == "" {
+		dbName = "postgres"
 	}
 
-	dsn := fmt.Sprintf("postgres://%s%s@127.0.0.1:5432/postgres?sslmode=disable", user, pass)
+	dsn := fmt.Sprintf("postgres://%s%s@127.0.0.1:%s/%s?sslmode=disable", user, pass, port, dbName)
 	col, err := services.NewPostgreSQLCollector(dsn)
 	if err != nil {
 		return "", err
