@@ -1334,6 +1334,16 @@ func (h *IngestionHandler) HandleRegisterAgent(c *gin.Context) {
     // Ideally we should add a helper in ConfigStore. For now, doing direct update.
     cfg := h.Config.Get()
     cfg.AgentSecrets[req.Hostname] = secret
+
+    // If the host was previously deleted/ignored, un-ignore it upon successful re-registration
+    var newIgnored []string
+    for _, ih := range cfg.IgnoredHosts {
+        if ih != req.Hostname {
+            newIgnored = append(newIgnored, ih)
+        }
+    }
+    cfg.IgnoredHosts = newIgnored
+
     h.Config.Save(cfg)
 
     c.JSON(http.StatusOK, gin.H{
