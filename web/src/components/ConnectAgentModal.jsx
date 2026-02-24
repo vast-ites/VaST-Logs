@@ -23,7 +23,7 @@ const ConnectAgentModal = ({ isOpen, onClose }) => {
 
     if (!isOpen) return null;
 
-    const installCommand = `curl -sL ${window.location.origin}/install.sh | sudo bash -s -- --api-key=${apiKey} --host=${hostInput}`;
+    const installCommand = `curl -sL ${window.location.origin}/install.sh | sudo bash -s -- --api-key=${apiKey} --host=${hostInput} --server-url=${window.location.origin}`;
 
     const handleCopy = () => {
         copyToClipboard(installCommand);
