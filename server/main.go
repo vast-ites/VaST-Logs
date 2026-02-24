@@ -179,6 +179,10 @@ func main() {
 	r.StaticFile("/vite.svg", "./dist/vite.svg")
 	r.StaticFile("/index.html", "./dist/index.html")
 
+	// Agent Installation Script & Binary
+	r.StaticFile("/install.sh", "./install.sh")
+	r.StaticFile("/agent/download", "./datavast-agent")
+
 	// PWA Assets
 	r.StaticFile("/manifest.json", "./dist/manifest.json")
 	r.StaticFile("/sw.js", "./dist/sw.js")
