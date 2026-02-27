@@ -138,7 +138,17 @@ func (sc *SystemCollector) Collect() (*SystemMetrics, error) {
     // Aggregate across all drives
     for k, stat := range diskIO {
         // Skip loop devices or ram
-        if strings.HasPrefix(k, "loop") || strings.HasPrefix(k, "ram") { continue }
+        if strings.HasPrefix(k, "loop") || strings.HasPrefix(k, "ram") || strings.HasPrefix(k, "sr") { continue }
+        
+        // Skip partitions if we already count the parent disk (e.g. sda and sda1)
+        isPartition := false
+        for parent := range diskIO {
+            if parent != k && strings.HasPrefix(k, parent) {
+                isPartition = true
+                break
+            }
+        }
+        if isPartition { continue }
         
         currentReadBytes += stat.ReadBytes
         currentWriteBytes += stat.WriteBytes

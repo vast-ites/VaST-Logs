@@ -46,9 +46,10 @@ const InfluxDBDetail = () => {
             let logUrl = `/api/v1/logs/search?service=${svcQuery}&limit=100`;
             if (timeRange === 'custom' && customRange.from && customRange.to) {
                 logUrl += `&after=${encodeURIComponent(new Date(customRange.from).toISOString())}&before=${encodeURIComponent(new Date(customRange.to).toISOString())}`;
-            } else if (timeRange !== 'realtime' && timeRange !== 'custom') {
+            } else if (timeRange !== 'custom') {
                 let ms = 0;
-                if (timeRange.endsWith('m')) ms = parseInt(timeRange) * 60 * 1000;
+                if (timeRange === 'realtime') ms = 15 * 60 * 1000;
+                else if (timeRange.endsWith('m')) ms = parseInt(timeRange) * 60 * 1000;
                 else if (timeRange.endsWith('h')) ms = parseInt(timeRange) * 60 * 60 * 1000;
                 else if (timeRange.endsWith('d')) ms = parseInt(timeRange) * 24 * 60 * 60 * 1000;
                 if (ms > 0) logUrl += `&after=${new Date(Date.now() - ms).toISOString()}`;
@@ -58,7 +59,7 @@ const InfluxDBDetail = () => {
             const resLogs = await fetch(logUrl, { headers });
             if (resLogs.ok) {
                 const data = await resLogs.json();
-                setLogs(data.logs || []);
+                setLogs(Array.isArray(data) ? data : (data?.logs || []));
             } else {
                 setLogs([]);
             }

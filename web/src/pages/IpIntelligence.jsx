@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Shield, Search, Globe, AlertTriangle, CheckCircle, Activity, MapPin, ExternalLink, Lock, Unlock, Crosshair, Wifi, ShieldAlert, ShieldCheck, ShieldX, Clock, ChevronDown, Eye, Ban, Server, Trash2, Plus, RefreshCw, List } from 'lucide-react';
 import { useHost } from '../contexts/HostContext';
 
@@ -91,6 +92,7 @@ const ServiceTag = ({ service }) => {
 
 const IpIntelligence = () => {
     const { selectedHost } = useHost();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [searchIp, setSearchIp] = useState('');
     const [ipData, setIpData] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -140,6 +142,15 @@ const IpIntelligence = () => {
         setCommandStatus(null);
     }, [selectedHost]);
 
+    // Handle auto-search from URL params
+    useEffect(() => {
+        const queryIp = searchParams.get('search');
+        if (queryIp && queryIp !== searchIp) {
+            setSearchIp(queryIp);
+            handleSearch(null, 1, queryIp);
+        }
+    }, [searchParams.get('search')]);
+
     // Quick block/unblock handler (no search required)
     const handleQuickBlock = async (ip, action) => {
         if (!ip || !selectedHost) return;
@@ -169,9 +180,10 @@ const IpIntelligence = () => {
         }
     };
 
-    const handleSearch = async (e, page = 1) => {
+    const handleSearch = async (e, page = 1, ipOverride = null) => {
         if (e) e.preventDefault();
-        if (!searchIp) return;
+        const targetIp = ipOverride || searchIp;
+        if (!targetIp) return;
 
         setLoading(true);
         setError(null);
@@ -183,7 +195,7 @@ const IpIntelligence = () => {
         try {
             const token = localStorage.getItem('token');
             const agentQuery = selectedHost ? `&agent_id=${selectedHost}` : '';
-            const res = await fetch(`/api/v1/ip/${searchIp}?page=${page}${agentQuery}`, {
+            const res = await fetch(`/api/v1/ip/${targetIp}?page=${page}${agentQuery}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 

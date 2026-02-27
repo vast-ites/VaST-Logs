@@ -72,3 +72,7 @@ patch_services.py
 patch_services_v2.py
 patch_host_context.py
 patch_host_context_v2.py
+check_services.py
+
+# Secrets
+token.txt

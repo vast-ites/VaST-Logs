@@ -726,9 +726,9 @@ func (s *LogStore) GetUniqueServices(host string) ([]string, error) {
 		// Continue to next table even if this fails? better to Log and continue
 	}
 
-	// 2. Query access logs
-	if err := queryTable("datavast.access_logs"); err != nil {
-		fmt.Printf("[ERROR] Failed to query datavast.access_logs services: %v\n", err)
+	// 3. Query service stats (PM2, MySQL, Redis, etc.)
+	if err := queryTable("datavast.service_stats"); err != nil {
+		fmt.Printf("[ERROR] Failed to query datavast.service_stats services: %v\n", err)
 	}
 
 	return services, nil
