@@ -141,7 +141,8 @@ func (h *IngestionHandler) HandleMetrics(c *gin.Context) {
         string(interfacesJSON), p.DDoSStatus, p.ProcessRaw,
         p.Uptime,
     ); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store metric"})
+        log.Printf("[ERROR] WriteSystemMetric failed for %s: %v\n", p.Hostname, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store metric", "details": err.Error()})
 		return
 	}
     

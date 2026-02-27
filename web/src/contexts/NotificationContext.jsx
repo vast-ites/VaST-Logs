@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const NotificationContext = createContext();
 
@@ -22,6 +23,7 @@ export const NotificationProvider = ({ children }) => {
     });
     const lastAlertIdRef = useRef(null);
     const pollIntervalRef = useRef(null);
+    const navigate = useNavigate();
 
     // Check permission state on mount
     useEffect(() => {
@@ -142,10 +144,24 @@ export const NotificationProvider = ({ children }) => {
                         const title = severity === 'critical' ? '🚨 CRITICAL ALERT' : '⚠️ Alert Triggered';
                         const body = `${alert.rule_name}: ${alert.host || 'unknown'}`;
 
+                        // Route mapping heuristics
+                        let route = '/alerts';
+                        const ruleLower = alert.rule_name.toLowerCase();
+                        if (ruleLower.includes('ssh') || ruleLower.includes('brute') || ruleLower.includes('fail2ban') || ruleLower.includes('security')) {
+                            route = `/services/security?host=${alert.host}`;
+                        } else if (ruleLower.includes('cpu')) {
+                            route = `/infrastructure/cpu?host=${alert.host}`;
+                        } else if (ruleLower.includes('memory') || ruleLower.includes('ram')) {
+                            route = `/infrastructure/memory?host=${alert.host}`;
+                        } else if (ruleLower.includes('disk') || ruleLower.includes('storage')) {
+                            route = `/infrastructure/storage?host=${alert.host}`;
+                        }
+
                         // Browser notification (only works on HTTPS)
                         showBrowserNotification(title, body, {
                             tag: `alert-${alert.id}`,
                             critical: severity === 'critical',
+                            onClick: () => navigate(route)
                         });
 
                         // In-app notification (always works)
@@ -173,7 +189,7 @@ export const NotificationProvider = ({ children }) => {
         return () => {
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
         };
-    }, [isEnabled, showBrowserNotification, addNotification]);
+    }, [isEnabled, showBrowserNotification, addNotification, navigate]);
 
     const value = {
         permission,

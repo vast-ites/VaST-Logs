@@ -39,8 +39,8 @@ function App() {
   return (
     <HostProvider>
       <ThemeProvider>
-        <NotificationProvider>
-          <BrowserRouter>
+        <BrowserRouter>
+          <NotificationProvider>
             <Routes>
               <Route path="/login" element={<Login />} />
 
@@ -174,8 +174,8 @@ function App() {
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </BrowserRouter>
-        </NotificationProvider>
+          </NotificationProvider>
+        </BrowserRouter>
       </ThemeProvider>
     </HostProvider>
   );

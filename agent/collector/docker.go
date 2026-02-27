@@ -81,7 +81,10 @@ func (dc *DockerCollector) ListRunningContainers() ([]container.Summary, error) 
 }
 
 func (dc *DockerCollector) GetContainerMetrics() ([]ContainerMetric, error) {
-	containers, err := dc.cli.ContainerList(context.Background(), container.ListOptions{})
+    listCtx, listCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	containers, err := dc.cli.ContainerList(listCtx, container.ListOptions{})
+    listCancel()
+    
 	if err != nil {
 		return nil, err
 	}
@@ -90,20 +93,24 @@ func (dc *DockerCollector) GetContainerMetrics() ([]ContainerMetric, error) {
     now := time.Now()
 
 	for _, c := range containers {
-		// Get Stats (streaming implementation, but we just read once)
-		stats, err := dc.cli.ContainerStats(context.Background(), c.ID, false)
+		// Get Stats with Strict Context Timeout
+        statCtx, statCancel := context.WithTimeout(context.Background(), 2*time.Second)
+		stats, err := dc.cli.ContainerStats(statCtx, c.ID, false)
 		if err != nil {
+            statCancel()
 			fmt.Printf("Error getting stats for %s: %v\n", c.ID, err)
 			continue
 		}
 		
 		var v DockerStats
 		dec := json.NewDecoder(stats.Body)
-		if err := dec.Decode(&v); err != nil {
-			stats.Body.Close()
+		err = dec.Decode(&v)
+		stats.Body.Close()
+        statCancel()
+
+		if err != nil {
 			continue
 		}
-		stats.Body.Close()
 
 		// Calculate CPU
 		cpuPercent := calculateCPUPercentUnix(v.PreCPUStats.CPUUsage.TotalUsage, v.PreCPUStats.SystemUsage, &v)

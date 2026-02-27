@@ -50,6 +50,14 @@ func (c *Client) post(endpoint string, data []byte) error {
         return err
     }
     defer resp.Body.Close()
+
+    if resp.StatusCode >= 300 {
+        // Read body for error details
+        buf := new(bytes.Buffer)
+        buf.ReadFrom(resp.Body)
+        return fmt.Errorf("HTTP %d: %s", resp.StatusCode, buf.String())
+    }
+
     return nil
 }
 
