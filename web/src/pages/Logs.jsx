@@ -269,7 +269,7 @@ const Logs = () => {
 
             {/* Search Bar */}
             <div className="glass-panel p-4 rounded-xl flex flex-wrap gap-4 items-center">
-                <div className="relative flex-1 min-w-0 group">
+                <div className="relative flex-1 min-w-[300px] group">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-cyber-muted" size={18} />
                     <input
                         type="text"

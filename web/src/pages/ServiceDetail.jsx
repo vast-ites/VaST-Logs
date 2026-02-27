@@ -12,6 +12,7 @@ import MongoDBDetail from './services/MongoDBDetail';
 import ClickHouseDetail from './services/ClickHouseDetail';
 import InfluxDBDetail from './services/InfluxDBDetail';
 import PM2Detail from './services/PM2Detail';
+import SecurityDetail from './services/SecurityDetail';
 
 const ServiceDetail = () => {
     const { serviceName } = useParams();
@@ -50,6 +51,7 @@ const ServiceDetail = () => {
         'influxdb': InfluxDBDetail,
         'datavast-influxdb': InfluxDBDetail,
         'pm2': PM2Detail,
+        'security': SecurityDetail,
     };
 
     const Component = serviceComponents[serviceName.toLowerCase()];

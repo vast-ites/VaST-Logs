@@ -3,8 +3,14 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const HostContext = createContext();
 
 export const HostProvider = ({ children }) => {
-    // Initialize from localStorage or default to empty
+    // Initialize from URL first, then localStorage, or default to empty
     const [selectedHost, setSelectedHost] = useState(() => {
+        const params = new URLSearchParams(window.location.search);
+        const urlHost = params.get('host');
+        if (urlHost) {
+            localStorage.setItem('datavast_selected_host', urlHost);
+            return urlHost;
+        }
         return localStorage.getItem('datavast_selected_host') || '';
     });
     // Initialize Refresh Rate from localStorage or default to 2000ms
