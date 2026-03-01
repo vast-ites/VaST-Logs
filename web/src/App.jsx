@@ -44,7 +44,7 @@ function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
 
-              <Route path="/" element={<Layout />}>
+              <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
                 <Route
                   index
                   element={
