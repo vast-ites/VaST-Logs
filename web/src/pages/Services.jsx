@@ -26,32 +26,46 @@ const Services = () => {
                 if (hostsRes.status === 401) { window.location.href = '/login'; return; }
                 const hostsData = await hostsRes.json();
 
-                // fetch services from ALL hosts and build service objects with host info
-                const allServices = [];
-                for (const host of hostsData) {
+                // fetch services from ALL hosts in parallel
+                const fetchPromises = hostsData.map(async (host) => {
                     try {
                         const pm2Apps = new Set();
-                        try {
-                            const pm2Res = await fetch(`/api/v1/services/pm2/db-stats?host=${host.hostname}&duration=5m`, { headers });
-                            if (pm2Res.ok) {
+
+                        // Fetch both PM2 stats and logs services in parallel for this host
+                        const [pm2Res, svcRes] = await Promise.all([
+                            fetch(`/api/v1/services/pm2/db-stats?host=${host.hostname}&duration=5m`, { headers }).catch(() => null),
+                            fetch(`/api/v1/logs/services?host=${host.hostname}`, { headers }).catch(() => null)
+                        ]);
+
+                        if (pm2Res && pm2Res.ok) {
+                            try {
                                 const pmData = await pm2Res.json();
                                 if (pmData.stats && pmData.stats.processes) {
                                     pmData.stats.processes.forEach(p => pm2Apps.add(p.name));
                                 }
-                            }
-                        } catch (e) { }
+                            } catch (e) { }
+                        }
 
-                        const svcRes = await fetch(`/api/v1/logs/services?host=${host.hostname}`, { headers });
-                        const servicesList = await svcRes.json();
-                        servicesList.forEach(s => {
-                            if (!pm2Apps.has(s)) {
-                                allServices.push({ name: s, host: host.hostname });
-                            }
-                        });
+                        const hostServices = [];
+                        if (svcRes && svcRes.ok) {
+                            try {
+                                const servicesList = await svcRes.json();
+                                servicesList.forEach(s => {
+                                    if (!pm2Apps.has(s)) {
+                                        hostServices.push({ name: s, host: host.hostname });
+                                    }
+                                });
+                            } catch (e) { }
+                        }
+                        return hostServices;
                     } catch (e) {
                         console.error(`Failed to fetch services for ${host.hostname}`, e);
+                        return [];
                     }
-                }
+                });
+
+                const allResults = await Promise.all(fetchPromises);
+                const allServices = allResults.flat();
 
                 setHosts(hostsData);
                 setServices(allServices);

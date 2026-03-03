@@ -363,7 +363,7 @@ func (s *LogStore) ApplyRetentionPolicy(days int) {
 		}
 	}
 
-	// 2. ClickHouse system tables — fixed 3-day TTL to prevent disk exhaustion
+	// 2. ClickHouse system tables — fixed 1-day TTL to prevent disk exhaustion
 	systemTables := []string{
 		"text_log", "trace_log", "metric_log", "query_log", "part_log",
 		"processors_profile_log", "asynchronous_metric_log",
@@ -371,9 +371,9 @@ func (s *LogStore) ApplyRetentionPolicy(days int) {
 	}
 	for _, table := range systemTables {
 		_ = s.conn.Exec(context.Background(), fmt.Sprintf(
-			"ALTER TABLE system.%s MODIFY TTL event_time + INTERVAL 3 DAY", table))
+			"ALTER TABLE system.%s MODIFY TTL event_time + INTERVAL 1 DAY", table))
 	}
-	log.Printf("[RETENTION] ✅ System tables → 3 day retention")
+	log.Printf("[RETENTION] ✅ System tables → 1 day retention")
 }
 
 // Query executes a query with parameters
