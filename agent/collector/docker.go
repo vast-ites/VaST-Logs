@@ -93,8 +93,8 @@ func (dc *DockerCollector) GetContainerMetrics() ([]ContainerMetric, error) {
     now := time.Now()
 
 	for _, c := range containers {
-		// Get Stats with Strict Context Timeout
-        statCtx, statCancel := context.WithTimeout(context.Background(), 2*time.Second)
+		// Get Stats with Strict Context Timeout (increased to 5s for heavy containers)
+        statCtx, statCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		stats, err := dc.cli.ContainerStats(statCtx, c.ID, false)
 		if err != nil {
             statCancel()
