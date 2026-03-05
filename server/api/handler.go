@@ -504,6 +504,22 @@ func (h *IngestionHandler) HandleDeleteHost(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"status": "purged", "host": host})
 }
 
+func (h *IngestionHandler) HandlePurgeSystemLogs(c *gin.Context) {
+    if h.Logs == nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Database connection not available"})
+        return
+    }
+
+	log.Printf("[Admin] Initiated manual ClickHouse system log purge via API")
+    if err := h.Logs.PurgeSystemLogs(); err != nil {
+        log.Printf("[ERROR] Manual system log purge failed: %v", err)
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to purge system logs", "details": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"status": "purged_system_logs"})
+}
+
 func SetupRoutes(r *gin.Engine, h *IngestionHandler) {
 	v1 := r.Group("/api/v1")
 	{
@@ -561,6 +577,7 @@ func SetupRoutes(r *gin.Engine, h *IngestionHandler) {
         adminRoutes.Use(OptionalAuth("admin"))
         {
             adminRoutes.DELETE("/hosts", h.HandleDeleteHost)
+            adminRoutes.POST("/system/purge-logs", h.HandlePurgeSystemLogs)
             adminRoutes.GET("/settings", h.HandleGetSettings)
             adminRoutes.POST("/settings", h.HandleSaveSettings)
             adminRoutes.POST("/mfa/setup", h.HandleSetupMFA)

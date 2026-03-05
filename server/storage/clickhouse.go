@@ -376,6 +376,34 @@ func (s *LogStore) ApplyRetentionPolicy(days int) {
 	log.Printf("[RETENTION] ✅ System tables → 1 day retention")
 }
 
+// PurgeSystemLogs forcefully truncates verbose system logging tables
+// to instantly reclaim disk space without waiting for the TTL to execute.
+func (s *LogStore) PurgeSystemLogs() error {
+	log.Printf("[PURGE] Initiating forceful truncation of ClickHouse system logs...")
+	systemTables := []string{
+		"text_log", "trace_log", "metric_log", "query_log", "part_log",
+		"processors_profile_log", "asynchronous_metric_log",
+		"background_schedule_pool_log", "error_log",
+	}
+
+	var errors []error
+	for _, table := range systemTables {
+		err := s.conn.Exec(context.Background(), fmt.Sprintf("TRUNCATE TABLE IF EXISTS system.%s", table))
+		if err != nil {
+			log.Printf("[PURGE] Failed to truncate system.%s: %v", table, err)
+			errors = append(errors, fmt.Errorf("system.%s: %v", table, err))
+		} else {
+			log.Printf("[PURGE] ✅ Truncated system.%s", table)
+		}
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("failed to truncate %d system tables. Check logs", len(errors))
+	}
+	log.Printf("[PURGE] ✅ System logs purged successfully")
+	return nil
+}
+
 // Query executes a query with parameters
 func (s *LogStore) Query(query string, args ...interface{}) (driver.Rows, error) {
 	s.mu.Lock()

@@ -316,6 +316,39 @@ const Settings = () => {
                                 Older logs will be automatically purged from ClickHouse to save space.
                             </p>
                         </div>
+
+                        {/* Manual Purge Utility */}
+                        <div className="pt-4 border-t border-cyber-gray/20">
+                            <label className="text-sm text-cyber-text block mb-2 font-medium">Manual Storage Maintenance</label>
+                            <p className="text-xs text-cyber-muted mb-3">
+                                Forcefully truncate overarching system metadata logs (<code>system.text_log</code>, etc.) to instantly free up disk blocks without touching application data.
+                            </p>
+                            <button
+                                onClick={async () => {
+                                    if (!window.confirm("⚠️ INSTANT PURGE\n\nAre you sure you want to truncate all verbose ClickHouse system logs?\nThis will permanently delete metric metadata logs and cannot be undone.")) return;
+
+                                    try {
+                                        const token = localStorage.getItem('token');
+                                        const res = await fetch('/api/v1/system/purge-logs', {
+                                            method: 'POST',
+                                            headers: { 'Authorization': `Bearer ${token}` }
+                                        });
+                                        if (res.ok) {
+                                            alert("✅ System logs purged successfully.");
+                                        } else {
+                                            const errorData = await res.json();
+                                            alert("❌ Failed to purge system logs: " + (errorData.error || "Unknown Error"));
+                                        }
+                                    } catch (err) {
+                                        console.error(err);
+                                        alert("❌ Connection Error while purging logs.");
+                                    }
+                                }}
+                                className="w-full flex items-center justify-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-2 rounded-lg hover:bg-red-500/20 hover:border-red-500/50 transition-colors font-medium text-sm"
+                            >
+                                <Database size={16} /> PURGE SYSTEM LOGS
+                            </button>
+                        </div>
                     </div>
                 </div>
 
