@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/datavast/datavast/server/alert"
-	"github.com/datavast/datavast/server/api"
-	"github.com/datavast/datavast/server/api/ip_intelligence"
-	"github.com/datavast/datavast/server/auth"
-	"github.com/datavast/datavast/server/geoip"
-	"github.com/datavast/datavast/server/storage"
+	"github.com/vastlogs/vastlogs/server/alert"
+	"github.com/vastlogs/vastlogs/server/api"
+	"github.com/vastlogs/vastlogs/server/api/ip_intelligence"
+	"github.com/vastlogs/vastlogs/server/auth"
+	"github.com/vastlogs/vastlogs/server/geoip"
+	"github.com/vastlogs/vastlogs/server/storage"
 	"github.com/gin-contrib/cors"
 	// "github.com/gin-contrib/gzip"
 	// "github.com/gin-contrib/static"
@@ -52,7 +52,7 @@ func main() {
 		}
 	}
 
-	log.Println("🚀 DataVast Backend Starting...")
+	log.Println("🚀 VaSTLogs Backend Starting...")
 
 	// Security warnings
 	if os.Getenv("AUTH_ENABLED") != "true" {
@@ -77,7 +77,7 @@ func main() {
 	clickhouseDSN := os.Getenv("CLICKHOUSE_DSN")
 
 	// 2. Storage with retry
-	influx := storage.NewMetricsStore(influxURL, influxToken, "datavast", "metrics")
+	influx := storage.NewMetricsStore(influxURL, influxToken, "vastlogs", "metrics")
 	defer influx.Close()
 
 	log.Println("🔌 Connecting to ClickHouse...")
@@ -181,7 +181,7 @@ func main() {
 
 	// Agent Installation Script & Binary
 	r.StaticFile("/install.sh", "./install.sh")
-	r.StaticFile("/agent/download", "./datavast-agent")
+	r.StaticFile("/agent/download", "./vastlogs-agent")
 
 	// PWA Assets
 	r.StaticFile("/manifest.json", "./dist/manifest.json")

@@ -58,7 +58,7 @@ export const NotificationProvider = ({ children }) => {
                 body,
                 icon: '/favicon.ico',
                 badge: '/favicon.ico',
-                tag: opts.tag || `datavast-${Date.now()}`,
+                tag: opts.tag || `vastlogs-${Date.now()}`,
                 requireInteraction: opts.critical || false,
                 silent: false,
                 ...opts,

@@ -12,10 +12,10 @@ package all
 
 import (
 	// ─── Active Modules ───────────────────────────────────────
-	_ "github.com/datavast/datavast/agent/modules/ssh_bruteforce"
+	_ "github.com/vastlogs/vastlogs/agent/modules/ssh_bruteforce"
 
 	// ─── Add new modules here ─────────────────────────────────
-	// _ "github.com/datavast/datavast/agent/modules/log_anomaly"
-	// _ "github.com/datavast/datavast/agent/modules/certificate_monitor"
-	// _ "github.com/datavast/datavast/agent/modules/disk_predictor"
+	// _ "github.com/vastlogs/vastlogs/agent/modules/log_anomaly"
+	// _ "github.com/vastlogs/vastlogs/agent/modules/certificate_monitor"
+	// _ "github.com/vastlogs/vastlogs/agent/modules/disk_predictor"
 )

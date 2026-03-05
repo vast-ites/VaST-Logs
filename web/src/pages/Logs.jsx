@@ -197,7 +197,7 @@ const Logs = () => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `datavast_logs_${new Date().getTime()}.csv`;
+        a.download = `vastlogs_logs_${new Date().getTime()}.csv`;
         a.click();
         window.URL.revokeObjectURL(url);
     };
@@ -225,7 +225,7 @@ const Logs = () => {
         // If it looks like a container name (has hash or project prefix) but didn't match above, call it Container
         // Or if we specifically know it coming from docker collector (backend doesn't explicitly flag this yet in service name, so we use heuristics)
         // Heuristic: if it contains dashes and isn't one of the clear system ones, assume container/app
-        if (s.includes('datavast') || s.includes('-')) return 'Docker Containers';
+        if (s.includes('vastlogs') || s.includes('-')) return 'Docker Containers';
 
         return 'Other Applications';
     };

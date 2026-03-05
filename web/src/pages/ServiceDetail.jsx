@@ -47,9 +47,9 @@ const ServiceDetail = () => {
         'mongodb': MongoDBDetail,
         'mongod': MongoDBDetail,
         'clickhouse': ClickHouseDetail,
-        'datavast-clickhouse': ClickHouseDetail,
+        'vastlogs-clickhouse': ClickHouseDetail,
         'influxdb': InfluxDBDetail,
-        'datavast-influxdb': InfluxDBDetail,
+        'vastlogs-influxdb': InfluxDBDetail,
         'pm2': PM2Detail,
         'security': SecurityDetail,
     };

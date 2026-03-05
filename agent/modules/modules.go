@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/datavast/datavast/agent/config"
-	"github.com/datavast/datavast/agent/sender"
+	"github.com/vastlogs/vastlogs/agent/config"
+	"github.com/vastlogs/vastlogs/agent/sender"
 )
 
 // AgentModule is the interface that all extensible agent capabilities must implement.

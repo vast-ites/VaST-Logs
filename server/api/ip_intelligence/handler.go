@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/datavast/datavast/server/geoip"
-	"github.com/datavast/datavast/server/storage"
+	"github.com/vastlogs/vastlogs/server/geoip"
+	"github.com/vastlogs/vastlogs/server/storage"
 	"github.com/gin-gonic/gin"
 )
 

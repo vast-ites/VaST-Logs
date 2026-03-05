@@ -12,10 +12,10 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/datavast/datavast/server/storage"
-    "github.com/datavast/datavast/server/geoip"
-    "github.com/datavast/datavast/server/auth"
-    "github.com/datavast/datavast/server/alert"
+	"github.com/vastlogs/vastlogs/server/storage"
+    "github.com/vastlogs/vastlogs/server/geoip"
+    "github.com/vastlogs/vastlogs/server/auth"
+    "github.com/vastlogs/vastlogs/server/alert"
 	"github.com/gin-gonic/gin"
 
     "github.com/golang-jwt/jwt/v5"
@@ -1343,7 +1343,7 @@ func (h *IngestionHandler) HandleRegisterAgent(c *gin.Context) {
 
 // MFA Setup
 func (h *IngestionHandler) HandleSetupMFA(c *gin.Context) {
-    secret, url, err := auth.GenerateMFA("admin@datavast")
+    secret, url, err := auth.GenerateMFA("admin@vastlogs")
     if err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate MFA"})
         return

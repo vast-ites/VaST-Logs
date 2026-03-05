@@ -42,7 +42,7 @@ export const TopBar = ({ onAddSource, onMenuToggle }) => {
 
             {/* Mobile Logo */}
             <div className="flex items-center gap-2 sm:hidden flex-1">
-                <span className="text-sm font-bold text-cyber-text tracking-widest font-display">DataVAST</span>
+                <span className="text-sm font-bold text-cyber-text tracking-widest font-display">VaSTLogs</span>
             </div>
 
             <div className="flex items-center gap-3 sm:gap-6 ml-2 sm:ml-6">

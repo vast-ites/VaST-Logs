@@ -34,7 +34,7 @@ export const Sidebar = ({ onClose }) => {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold text-cyber-text tracking-widest font-display">
-                            DataVAST
+                            VaSTLogs
                         </h1>
                         <span className="text-[10px] text-cyber-cyan font-mono tracking-[0.2em] relative -top-1 block">
                             OBSERVABILITY

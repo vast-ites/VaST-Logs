@@ -39,7 +39,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
 			Addr: []string{"127.0.0.1:9000"},
 			Auth: clickhouse.Auth{
 				Database: "default",
-				Username: "datavast",
+				Username: "vastlogs",
 				Password: "securepass",
 			},
 		}
@@ -55,14 +55,14 @@ func NewLogStore(dsn string) (*LogStore, error) {
 	}
 
 	// Create Database
-	err = conn.Exec(context.Background(), `CREATE DATABASE IF NOT EXISTS datavast`)
+	err = conn.Exec(context.Background(), `CREATE DATABASE IF NOT EXISTS vastlogs`)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create db: %w", err)
 	}
 
 	// Create table
 	err = conn.Exec(context.Background(), `
-		CREATE TABLE IF NOT EXISTS datavast.logs (
+		CREATE TABLE IF NOT EXISTS vastlogs.logs (
 			timestamp DateTime,
 			host String,
 			service String,
@@ -78,7 +78,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
 
 	// Create Process Table
 	err = conn.Exec(context.Background(), `
-		CREATE TABLE IF NOT EXISTS datavast.processes (
+		CREATE TABLE IF NOT EXISTS vastlogs.processes (
 			timestamp DateTime,
 			host String,
 			pid Int32,
@@ -97,7 +97,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
 
 	// Create Firewall Table
 	err = conn.Exec(context.Background(), `
-        CREATE TABLE IF NOT EXISTS datavast.firewall (
+        CREATE TABLE IF NOT EXISTS vastlogs.firewall (
             timestamp DateTime,
             host String,
             rules String
@@ -111,7 +111,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
 
 	// Create Access Logs Table (for Apache/Nginx web traffic)
 	err = conn.Exec(context.Background(), `
-		CREATE TABLE IF NOT EXISTS datavast.access_logs (
+		CREATE TABLE IF NOT EXISTS vastlogs.access_logs (
 			timestamp DateTime,
 			service String,
 			host String,
@@ -140,14 +140,14 @@ func NewLogStore(dsn string) (*LogStore, error) {
 
 	// 1. Skip Index for Log Messages (Accelerates text search 10x-50x)
 	_ = conn.Exec(context.Background(), `
-        ALTER TABLE datavast.logs 
+        ALTER TABLE vastlogs.logs 
         ADD INDEX IF NOT EXISTS idx_message message TYPE tokenbf_v1(10240, 2, 0) GRANULARITY 4
     `)
 
 	// 2. Materialized View for Metric Aggregation (Pre-calculate 1m, 1h stats)
 	// First, target table for aggregated stats
 	_ = conn.Exec(context.Background(), `
-        CREATE TABLE IF NOT EXISTS datavast.access_logs_1m (
+        CREATE TABLE IF NOT EXISTS vastlogs.access_logs_1m (
             timestamp DateTime,
             service String,
             host String,
@@ -161,7 +161,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
 
 	// Second, the MV trigger
 	_ = conn.Exec(context.Background(), `
-        CREATE MATERIALIZED VIEW IF NOT EXISTS datavast.access_logs_mv TO datavast.access_logs_1m AS
+        CREATE MATERIALIZED VIEW IF NOT EXISTS vastlogs.access_logs_mv TO vastlogs.access_logs_1m AS
         SELECT
             toStartOfMinute(timestamp) as timestamp,
             service,
@@ -169,13 +169,13 @@ func NewLogStore(dsn string) (*LogStore, error) {
             count() as total_requests,
             sum(bytes_sent) as total_bytes,
             0.0 as avg_latency
-        FROM datavast.access_logs
+        FROM vastlogs.access_logs
         GROUP BY timestamp, service, host
     `)
 
 	// 3. Skip Index for Source Path (File filtering)
 	_ = conn.Exec(context.Background(), `
-        ALTER TABLE datavast.logs 
+        ALTER TABLE vastlogs.logs 
         ADD INDEX IF NOT EXISTS idx_source source_path TYPE set(100) GRANULARITY 2
     `)
 
@@ -183,7 +183,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
 
 	// Create Alerts Table
 	err = conn.Exec(context.Background(), `
-        CREATE TABLE IF NOT EXISTS datavast.alerts (
+        CREATE TABLE IF NOT EXISTS vastlogs.alerts (
             timestamp DateTime,
             host String,
             type String,
@@ -200,7 +200,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
 
 	// Create Connections Table (High Frequency)
 	err = conn.Exec(context.Background(), `
-        CREATE TABLE IF NOT EXISTS datavast.connections (
+        CREATE TABLE IF NOT EXISTS vastlogs.connections (
             timestamp DateTime,
             host String,
             local_ip String,
@@ -224,7 +224,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
 
 	// 1. IP Geo Cache (Optimized for frequent lookups)
 	err = conn.Exec(context.Background(), `
-        CREATE TABLE IF NOT EXISTS datavast.ip_geo_cache (
+        CREATE TABLE IF NOT EXISTS vastlogs.ip_geo_cache (
             ip_address String,
             country String,
             state String,
@@ -240,7 +240,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
 
 	// 2. Blocked IPs (Source-Aware)
 	err = conn.Exec(context.Background(), `
-        CREATE TABLE IF NOT EXISTS datavast.blocked_ips (
+        CREATE TABLE IF NOT EXISTS vastlogs.blocked_ips (
             ip_address String,
             agent_id String,
             blocked_at DateTime DEFAULT now(),
@@ -255,7 +255,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
 
 	// 2b. Agent Commands Queue
 	err = conn.Exec(context.Background(), `
-        CREATE TABLE IF NOT EXISTS datavast.agent_commands (
+        CREATE TABLE IF NOT EXISTS vastlogs.agent_commands (
             id String DEFAULT generateUUIDv4(),
             agent_id String,
             action String,
@@ -274,7 +274,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
 
 	// 3. IP Activity Aggregation (Materialized View Target)
 	err = conn.Exec(context.Background(), `
-        CREATE TABLE IF NOT EXISTS datavast.ip_activity_daily (
+        CREATE TABLE IF NOT EXISTS vastlogs.ip_activity_daily (
             day Date,
             agent_id String,
             ip_address String,
@@ -291,7 +291,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
 
 	// 4. IP Activity MV (Feed from access_logs)
 	err = conn.Exec(context.Background(), `
-        CREATE MATERIALIZED VIEW IF NOT EXISTS datavast.ip_activity_mv TO datavast.ip_activity_daily AS
+        CREATE MATERIALIZED VIEW IF NOT EXISTS vastlogs.ip_activity_mv TO vastlogs.ip_activity_daily AS
         SELECT
             toDate(timestamp) as day,
             host as agent_id,
@@ -300,7 +300,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
             count() as total_requests,
             min(timestamp) as first_seen,
             max(timestamp) as last_seen
-        FROM datavast.access_logs
+        FROM vastlogs.access_logs
         GROUP BY day, agent_id, ip_address, service_type
     `)
 	if err != nil {
@@ -309,7 +309,7 @@ func NewLogStore(dsn string) (*LogStore, error) {
 
 	// Create Service Stats Table (for DB metrics from agents)
 	err = conn.Exec(context.Background(), `
-		CREATE TABLE IF NOT EXISTS datavast.service_stats (
+		CREATE TABLE IF NOT EXISTS vastlogs.service_stats (
 			timestamp DateTime,
 			host String,
 			service String,
@@ -346,12 +346,12 @@ func (s *LogStore) ApplyRetentionPolicy(days int) {
 		Table  string
 		Column string
 	}{
-		{"datavast.logs", "timestamp"},
-		{"datavast.connections", "timestamp"},
-		{"datavast.processes", "timestamp"},
-		{"datavast.firewall", "timestamp"},
-		{"datavast.access_logs", "timestamp"},
-		{"datavast.service_stats", "timestamp"},
+		{"vastlogs.logs", "timestamp"},
+		{"vastlogs.connections", "timestamp"},
+		{"vastlogs.processes", "timestamp"},
+		{"vastlogs.firewall", "timestamp"},
+		{"vastlogs.access_logs", "timestamp"},
+		{"vastlogs.service_stats", "timestamp"},
 	}
 	for _, t := range appTables {
 		err := s.conn.Exec(context.Background(), fmt.Sprintf(
@@ -399,7 +399,7 @@ type ProcessEntry struct {
 func (s *LogStore) InsertProcesses(entries []ProcessEntry) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	batch, err := s.conn.PrepareBatch(context.Background(), "INSERT INTO datavast.processes")
+	batch, err := s.conn.PrepareBatch(context.Background(), "INSERT INTO vastlogs.processes")
 	if err != nil {
 		return err
 	}
@@ -421,7 +421,7 @@ func (s *LogStore) GetLatestProcesses(host string) ([]ProcessEntry, error) {
 	// efficient latest query
 	query := `
         SELECT timestamp, host, pid, name, username, cpu_percent, memory_percent, cmdline
-        FROM datavast.processes
+        FROM vastlogs.processes
         WHERE host = ? AND timestamp > now() - INTERVAL 5 MINUTE
         ORDER BY timestamp DESC
         LIMIT 50
@@ -432,9 +432,9 @@ func (s *LogStore) GetLatestProcesses(host string) ([]ProcessEntry, error) {
 
 	query = `
         SELECT timestamp, host, pid, name, username, cpu_percent, memory_percent, cmdline
-        FROM datavast.processes
+        FROM vastlogs.processes
         WHERE host = ? AND timestamp = (
-            SELECT max(timestamp) FROM datavast.processes WHERE host = ?
+            SELECT max(timestamp) FROM vastlogs.processes WHERE host = ?
         )
         ORDER BY cpu_percent DESC
         LIMIT 50
@@ -461,7 +461,7 @@ func (s *LogStore) InsertFirewall(timestamp time.Time, host, rules string) error
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.conn.Exec(context.Background(), `
-        INSERT INTO datavast.firewall (timestamp, host, rules) VALUES (?, ?, ?)
+        INSERT INTO vastlogs.firewall (timestamp, host, rules) VALUES (?, ?, ?)
      `, timestamp, host, rules)
 }
 
@@ -470,7 +470,7 @@ func (s *LogStore) GetLatestFirewall(host string) (string, error) {
 	defer s.mu.Unlock()
 	var rules string
 	err := s.conn.QueryRow(context.Background(), `
-        SELECT rules FROM datavast.firewall 
+        SELECT rules FROM vastlogs.firewall 
         WHERE host = ? ORDER BY timestamp DESC LIMIT 1
     `, host).Scan(&rules)
 	if err != nil {
@@ -501,7 +501,7 @@ func (s *LogStore) InsertAlert(entry AlertEntry) error {
 	}
 
 	return s.conn.Exec(context.Background(), `
-        INSERT INTO datavast.alerts (timestamp, host, type, severity, message, resolved)
+        INSERT INTO vastlogs.alerts (timestamp, host, type, severity, message, resolved)
         VALUES (?, ?, ?, ?, ?, ?)
     `, entry.Timestamp, entry.Host, entry.Type, entry.Severity, entry.Message, resolvedInt)
 }
@@ -516,7 +516,7 @@ func (s *LogStore) GetRecentAlerts(limit int) ([]AlertEntry, error) {
 
 	rows, err := s.conn.Query(context.Background(), fmt.Sprintf(`
         SELECT timestamp, host, type, severity, message, resolved 
-        FROM datavast.alerts
+        FROM vastlogs.alerts
         ORDER BY timestamp DESC
         LIMIT %d
     `, limit))
@@ -560,7 +560,7 @@ func (s *LogStore) InsertAccessLog(entry AccessLogEntry) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.conn.Exec(context.Background(), `
-		INSERT INTO datavast.access_logs (timestamp, service, host, ip, method, path, status_code, bytes_sent, user_agent, country, region, city, latitude, longitude, domain)
+		INSERT INTO vastlogs.access_logs (timestamp, service, host, ip, method, path, status_code, bytes_sent, user_agent, country, region, city, latitude, longitude, domain)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, entry.Timestamp, entry.Service, entry.Host, entry.IP, entry.Method, entry.Path, entry.StatusCode, entry.BytesSent, entry.UserAgent, entry.Country, entry.Region, entry.City, entry.Latitude, entry.Longitude, entry.Domain)
 }
@@ -569,7 +569,7 @@ func (s *LogStore) InsertLog(entry LogEntry) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.conn.Exec(context.Background(), `
-		INSERT INTO datavast.logs (timestamp, host, service, level, message, source_path)
+		INSERT INTO vastlogs.logs (timestamp, host, service, level, message, source_path)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`, entry.Timestamp, entry.Host, entry.Service, entry.Level, entry.Message, entry.SourcePath)
 }
@@ -583,7 +583,7 @@ func (s *LogStore) GetRecentLogs(limit int) ([]LogEntry, error) {
 	}
 	rows, err := s.conn.Query(context.Background(), fmt.Sprintf(`
 		SELECT timestamp, host, service, level, message, source_path
-		FROM datavast.logs
+		FROM vastlogs.logs
 		ORDER BY timestamp DESC
 		LIMIT %d
 	`, limit))
@@ -622,7 +622,7 @@ func (s *LogStore) QueryLogs(filter LogFilter) ([]LogEntry, error) {
 		filter.Limit = 100
 	}
 
-	query := "SELECT timestamp, host, service, level, message, source_path FROM datavast.logs WHERE 1=1"
+	query := "SELECT timestamp, host, service, level, message, source_path FROM vastlogs.logs WHERE 1=1"
 	var args []interface{}
 
 	if filter.Host != "" {
@@ -721,14 +721,14 @@ func (s *LogStore) GetUniqueServices(host string) ([]string, error) {
 	}
 
 	// 1. Query generic logs
-	if err := queryTable("datavast.logs"); err != nil {
-		fmt.Printf("[ERROR] Failed to query datavast.logs services: %v\n", err)
+	if err := queryTable("vastlogs.logs"); err != nil {
+		fmt.Printf("[ERROR] Failed to query vastlogs.logs services: %v\n", err)
 		// Continue to next table even if this fails? better to Log and continue
 	}
 
 	// 3. Query service stats (PM2, MySQL, Redis, etc.)
-	if err := queryTable("datavast.service_stats"); err != nil {
-		fmt.Printf("[ERROR] Failed to query datavast.service_stats services: %v\n", err)
+	if err := queryTable("vastlogs.service_stats"); err != nil {
+		fmt.Printf("[ERROR] Failed to query vastlogs.service_stats services: %v\n", err)
 	}
 
 	return services, nil
@@ -749,7 +749,7 @@ type ConnectionEntry struct {
 func (s *LogStore) InsertConnections(entries []ConnectionEntry) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	batch, err := s.conn.PrepareBatch(context.Background(), "INSERT INTO datavast.connections")
+	batch, err := s.conn.PrepareBatch(context.Background(), "INSERT INTO vastlogs.connections")
 	if err != nil {
 		return err
 	}
@@ -781,11 +781,11 @@ func (s *LogStore) GetConnectionSummary(host string) ([]ConnectionSummary, error
 	// that narrow window instead of scanning the entire table.
 	query := `
         SELECT local_port, any(process_name), countIf(status != 'LISTEN') as active
-        FROM datavast.connections
+        FROM vastlogs.connections
         WHERE host = ?
           AND timestamp > now() - INTERVAL 30 SECOND
           AND timestamp = (
-              SELECT max(timestamp) FROM datavast.connections
+              SELECT max(timestamp) FROM vastlogs.connections
               WHERE host = ? AND timestamp > now() - INTERVAL 30 SECOND
           )
         GROUP BY local_port
@@ -815,12 +815,12 @@ func (s *LogStore) GetConnectionDetails(host string, port uint16) ([]ConnectionE
 
 	rows, err := s.conn.Query(context.Background(), `
         SELECT timestamp, host, local_ip, local_port, remote_ip, remote_port, status, pid, process_name
-        FROM datavast.connections
+        FROM vastlogs.connections
         WHERE host = ? 
           AND local_port = ?
           AND timestamp > now() - INTERVAL 30 SECOND
           AND timestamp = (
-              SELECT max(timestamp) FROM datavast.connections
+              SELECT max(timestamp) FROM vastlogs.connections
               WHERE host = ? AND timestamp > now() - INTERVAL 30 SECOND
           )
           AND status != 'LISTEN'
@@ -847,7 +847,7 @@ func (s *LogStore) GetConnectionDetails(host string, port uint16) ([]ConnectionE
 func (s *LogStore) IsIPBlocked(ip, agentID string) (bool, error) {
 	// FINAL is required because we use lightweight deletes (ALTER TABLE DELETE)
 	// which are async — without FINAL, deleted rows may still be counted
-	query := `SELECT count() FROM datavast.blocked_ips FINAL WHERE ip_address = ?`
+	query := `SELECT count() FROM vastlogs.blocked_ips FINAL WHERE ip_address = ?`
 	args := []interface{}{ip}
 
 	if agentID != "" && agentID != "all" {
@@ -873,7 +873,7 @@ func (s *LogStore) IsIPBlocked(ip, agentID string) (bool, error) {
 // GetBlockedIPs returns all currently blocked IPs for a given agent.
 func (s *LogStore) GetBlockedIPs(agentID string) ([]map[string]interface{}, error) {
 	query := `SELECT ip_address, blocked_at, blocked_by, reason 
-		FROM datavast.blocked_ips FINAL 
+		FROM vastlogs.blocked_ips FINAL 
 		WHERE agent_id = ? 
 		ORDER BY blocked_at DESC`
 
@@ -902,7 +902,7 @@ func (s *LogStore) GetBlockedIPs(agentID string) ([]map[string]interface{}, erro
 
 func (s *LogStore) BlockIP(ip, agentID, reason string) error {
 	// Insert into blocked_ips
-	query := `INSERT INTO datavast.blocked_ips (ip_address, agent_id, blocked_at, blocked_by, reason) VALUES (?, ?, now(), 'admin', ?)`
+	query := `INSERT INTO vastlogs.blocked_ips (ip_address, agent_id, blocked_at, blocked_by, reason) VALUES (?, ?, now(), 'admin', ?)`
 	if err := s.conn.Exec(context.Background(), query, ip, agentID, reason); err != nil {
 		return err
 	}
@@ -912,7 +912,7 @@ func (s *LogStore) BlockIP(ip, agentID, reason string) error {
 
 func (s *LogStore) UnblockIP(ip, agentID string) error {
 	// Lightweight delete
-	query := `ALTER TABLE datavast.blocked_ips DELETE WHERE ip_address = ? AND agent_id = ?`
+	query := `ALTER TABLE vastlogs.blocked_ips DELETE WHERE ip_address = ? AND agent_id = ?`
 	if err := s.conn.Exec(context.Background(), query, ip, agentID); err != nil {
 		return err
 	}
@@ -931,12 +931,12 @@ type AgentCommand struct {
 }
 
 func (s *LogStore) InsertCommand(agentID, action, targetIP string) error {
-	query := `INSERT INTO datavast.agent_commands (agent_id, action, target_ip, status, created_at) VALUES (?, ?, ?, 'pending', now())`
+	query := `INSERT INTO vastlogs.agent_commands (agent_id, action, target_ip, status, created_at) VALUES (?, ?, ?, 'pending', now())`
 	return s.conn.Exec(context.Background(), query, agentID, action, targetIP)
 }
 
 func (s *LogStore) GetPendingCommands(agentID string) ([]AgentCommand, error) {
-	query := `SELECT id, agent_id, action, target_ip, status FROM datavast.agent_commands WHERE agent_id = ? AND status = 'pending' ORDER BY created_at ASC`
+	query := `SELECT id, agent_id, action, target_ip, status FROM vastlogs.agent_commands WHERE agent_id = ? AND status = 'pending' ORDER BY created_at ASC`
 	rows, err := s.conn.Query(context.Background(), query, agentID)
 	if err != nil {
 		return nil, err
@@ -956,13 +956,13 @@ func (s *LogStore) GetPendingCommands(agentID string) ([]AgentCommand, error) {
 
 func (s *LogStore) AckCommand(id, status, output string) error {
 	// Use ALTER UPDATE (lightweight) to mark command as done
-	query := `ALTER TABLE datavast.agent_commands UPDATE status = ?, output = ?, executed_at = now() WHERE id = ?`
+	query := `ALTER TABLE vastlogs.agent_commands UPDATE status = ?, output = ?, executed_at = now() WHERE id = ?`
 	return s.conn.Exec(context.Background(), query, status, output, id)
 }
 
 func (s *LogStore) SyncBlockedIPs(agentID string, blockedIPs []string) error {
 	// 1. Delete all existing records for this agent
-	delQuery := `ALTER TABLE datavast.blocked_ips DELETE WHERE agent_id = ?`
+	delQuery := `ALTER TABLE vastlogs.blocked_ips DELETE WHERE agent_id = ?`
 	if err := s.conn.Exec(context.Background(), delQuery, agentID); err != nil {
 		return fmt.Errorf("failed to clear old blocked IPs: %w", err)
 	}
@@ -972,7 +972,7 @@ func (s *LogStore) SyncBlockedIPs(agentID string, blockedIPs []string) error {
 		return nil
 	}
 
-	batch, err := s.conn.PrepareBatch(context.Background(), "INSERT INTO datavast.blocked_ips (ip_address, agent_id, blocked_at, blocked_by, reason)")
+	batch, err := s.conn.PrepareBatch(context.Background(), "INSERT INTO vastlogs.blocked_ips (ip_address, agent_id, blocked_at, blocked_by, reason)")
 	if err != nil {
 		return fmt.Errorf("failed to prepare batch: %w", err)
 	}
@@ -1001,7 +1001,7 @@ func (s *LogStore) GetIPActivity(ip, agentID string) ([]IPActivityStats, error) 
 	// 1. Get stats from Web Access Logs (via Materialized View)
 	queryWeb := `
         SELECT service_type, sum(total_requests), min(first_seen), max(last_seen)
-        FROM datavast.ip_activity_daily
+        FROM vastlogs.ip_activity_daily
         WHERE ip_address = ?
     `
 	argsWeb := []interface{}{ip}
@@ -1017,7 +1017,7 @@ func (s *LogStore) GetIPActivity(ip, agentID string) ([]IPActivityStats, error) 
 	// Skip index on message helps here.
 	querySys := `
         SELECT service, count(), min(timestamp), max(timestamp)
-        FROM datavast.logs
+        FROM vastlogs.logs
         WHERE message ILIKE ? 
     `
 	argsSys := []interface{}{"%" + ip + "%"}
@@ -1066,7 +1066,7 @@ func (s *LogStore) GetComprehensiveLogsForIP(ip, agentID string, limit, offset i
                 level, 
                 message, 
                 source_path
-            FROM datavast.logs
+            FROM vastlogs.logs
             WHERE message ILIKE ?
             ` + (func() string { if agentID != "" && agentID != "all" { return " AND host = ? " } else { return "" } })() + `
             
@@ -1079,7 +1079,7 @@ func (s *LogStore) GetComprehensiveLogsForIP(ip, agentID string, limit, offset i
                 multiIf(status_code >= 500, 'ERROR', status_code >= 400, 'WARN', 'INFO') as level,
                 concat(method, ' ', path, ' [', toString(status_code), '] - ', toString(bytes_sent), ' bytes') as message,
                 'access_log' as source_path
-            FROM datavast.access_logs
+            FROM vastlogs.access_logs
             WHERE ip = ?
             ` + (func() string { if agentID != "" && agentID != "all" { return " AND host = ? " } else { return "" } })() + `
         )
@@ -1123,7 +1123,7 @@ func (s *LogStore) GetComprehensiveLogsForIP(ip, agentID string, limit, offset i
 
 func (s *LogStore) CountSSHEventsForIP(ip, agentID string) (int, error) {
 	query := `
-		SELECT count() FROM datavast.logs
+		SELECT count() FROM vastlogs.logs
 		WHERE (service = 'sshd' OR message ILIKE '%sshd[%') AND message ILIKE ?
 	`
 	args := []interface{}{"%" + ip + "%"}
@@ -1143,7 +1143,7 @@ func (s *LogStore) CountSSHEventsForIP(ip, agentID string) (int, error) {
 
 func (s *LogStore) CountAuthFailuresForIP(ip, agentID string) (int, error) {
 	query := `
-		SELECT count() FROM datavast.logs
+		SELECT count() FROM vastlogs.logs
 		WHERE (
 			(
 				(message ILIKE '%sshd[%' OR service = 'sshd') AND message ILIKE '%Failed password%'
@@ -1180,7 +1180,7 @@ func (s *LogStore) InsertServiceStats(entry ServiceStatsEntry) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.conn.Exec(context.Background(), `
-		INSERT INTO datavast.service_stats (timestamp, host, service, stats)
+		INSERT INTO vastlogs.service_stats (timestamp, host, service, stats)
 		VALUES (?, ?, ?, ?)
 	`, entry.Timestamp, entry.Host, entry.Service, entry.Stats)
 }
@@ -1189,7 +1189,7 @@ func (s *LogStore) GetLatestServiceStats(host, service string, start, end time.T
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	query := `SELECT stats, timestamp FROM datavast.service_stats WHERE service = ?`
+	query := `SELECT stats, timestamp FROM vastlogs.service_stats WHERE service = ?`
 	args := []interface{}{service}
 
 	if host != "" {
@@ -1224,14 +1224,14 @@ func (s *LogStore) PurgeHost(host string) error {
 
 	// Tables that use `host` column
 	hostTables := []string{
-		"datavast.logs",
-		"datavast.processes",
-		"datavast.firewall",
-		"datavast.access_logs",
-		"datavast.access_logs_1m",
-		"datavast.alerts",
-		"datavast.connections",
-		"datavast.service_stats",
+		"vastlogs.logs",
+		"vastlogs.processes",
+		"vastlogs.firewall",
+		"vastlogs.access_logs",
+		"vastlogs.access_logs_1m",
+		"vastlogs.alerts",
+		"vastlogs.connections",
+		"vastlogs.service_stats",
 	}
 
 	for _, table := range hostTables {
@@ -1243,9 +1243,9 @@ func (s *LogStore) PurgeHost(host string) error {
 
 	// Tables that use `agent_id` column
 	agentTables := []string{
-		"datavast.blocked_ips",
-		"datavast.agent_commands",
-		"datavast.ip_activity_daily",
+		"vastlogs.blocked_ips",
+		"vastlogs.agent_commands",
+		"vastlogs.ip_activity_daily",
 	}
 
 	for _, table := range agentTables {

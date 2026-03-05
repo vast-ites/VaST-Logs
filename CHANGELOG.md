@@ -171,7 +171,7 @@
 
 ## [2.18.28] - 2026-02-04
 ### Added
-- **Alert History Ingestion**: Introduced persistent storage for all system and security alerts. Events are now saved to the `datavast.alerts` ClickHouse table with a 30-day retention policy.
+- **Alert History Ingestion**: Introduced persistent storage for all system and security alerts. Events are now saved to the `vastlogs.alerts` ClickHouse table with a 30-day retention policy.
 - **DDL Validation**: Implemented automatic schema provisioning for the Alerts table on server startup.
 
 ## [2.18.27] - 2026-02-04
@@ -186,7 +186,7 @@
 ## [2.18.26] - 2026-02-04
 ### Added
 - **Database Thread Safety (sync.Mutex)**: Implemented global mutex serialization in the `LogStore` to prevent segmentation faults (`SEGV`) caused by concurrent access to the ClickHouse Go v2 driver.
-- **Hybrid Service Discovery (Parallel Query Path)**: Refactored `GetUniqueServices` to execute independent queries for `datavast.logs` and `datavast.access_logs`, ensuring reliable discovery of Apache/Nginx services even when driver-level SQL binding for `UNION` fails.
+- **Hybrid Service Discovery (Parallel Query Path)**: Refactored `GetUniqueServices` to execute independent queries for `vastlogs.logs` and `vastlogs.access_logs`, ensuring reliable discovery of Apache/Nginx services even when driver-level SQL binding for `UNION` fails.
 - **ClickHouse Health Diagnostics**: Documented recovery procedures for `TOO_MANY_PARTS` (Code 252) and `MEMORY_LIMIT_EXCEEDED` (Code 241) errors.
 
 ### Fixed
@@ -345,7 +345,7 @@
 - **Enriched Host Discovery**: Upgraded the Discovery API and storage layer to retrieve and parse primary IP addresses from interface telemetry. The frontend now displays `Hostname (IP)` in the source selector for improved fleet visibility.
 - **Improved Context Initialization**: Optimized the `HostContext` auto-selection logic to handle structured host objects and ensure reliable default host assignment on first load.
 - **Mass Agent Synchronization**: Rebuilt and redeployed the latest optimized agent binary to all nodes in the fleet (`<SERVER_IP>`, `77.42.84.21`, `77.42.67.214`), ensuring 100% version parity across monitored clusters.
-- **Backend Service Migration**: Established `datavast-server.service` on the main hub for managed persistence and automatic recovery.
+- **Backend Service Migration**: Established `vastlogs-server.service` on the main hub for managed persistence and automatic recovery.
 - **Disk I/O Bug Fix**: Resolved a critical telemetry regression where `disk_write_rate` and `disk_read_rate` were reporting 0 due to incorrect JSON tag mapping in the `DiskIOCounters` collector.
 
 ## [2.10.0-alpha] - 2026-01-27
@@ -353,7 +353,7 @@
 - **Asynchronous Data Decoupling**: Fully decoupled `CollectRaw` (top binary) from the 1s agent heartbeat using `atomic.Value` storage. This ensures 1s telemetry rigor even on heavily loaded systems where `top` execution might exceed the loop interval.
 - **Deployment Resilience**: Established mandatory post-SCP delays to resolve "Text file busy" race conditions during automated fleet updates.
 - **Environment Configuration**: Standardized `SERVER_URL` via environment variables/systemd units to reliably direct remote agents to the central ingestion hub.
-- **Service Standardization**: Successfully migrated the entire fleet (`fusionpbx`, `worker-node-1`, and the `DataVast-server`) to managed `systemd` services. This ensures persistent observability and automatic recovery across all monitored infrastructure.
+- **Service Standardization**: Successfully migrated the entire fleet (`fusionpbx`, `worker-node-1`, and the `VaSTLogs-server`) to managed `systemd` services. This ensures persistent observability and automatic recovery across all monitored infrastructure.
 - **Fleet Verification**: Confirmed 1s-accurate terminal refreshes and consistent environment-driven routing (`SERVER_URL`) across all active nodes as of Jan 27.
 
 ## [2.9.0-alpha] - 2026-01-25
@@ -407,7 +407,7 @@
 - **History Data Integrity**: Fixed "Empty Graph" issue by assigning the `Timestamp` field in the backend Flux query response loop.
 - **Chart Precision**: Corrected frontend slicing logic in `Storage.jsx` to ensure the most recent 60 telemetry points are visualized (fixing the "Zero-Load" stale view).
 - **Deployment Safety**: Standardized build-exit-code verification and added mandatory synchronization delays (`sleep`) to resolve "Text file busy" race conditions during rapid updates.
-- **Multi-Node Rollout**: Successfully verified the real-time telemetry pipeline across the distributed fleet (`<SERVER_IP>`, `77.42.67.214`, `77.42.84.21`), standardizing on `/opt/datavast` deployment paths and explicit `SERVER_URL` connection strings.
+- **Multi-Node Rollout**: Successfully verified the real-time telemetry pipeline across the distributed fleet (`<SERVER_IP>`, `77.42.67.214`, `77.42.84.21`), standardizing on `/opt/vastlogs` deployment paths and explicit `SERVER_URL` connection strings.
 - **Connection Reliability**: Fixed a "Connection Refused" loop where remote agents defaulted to `localhost:8080`; implemented verified `SERVER_URL` environment injection.
 - **Data Transit Diagnostics**: Identified silent metric loss between Agent and Server caused by both JSON tag mismatches and manual mapping omissions in the sender client; established payload instrumentation as a standard debugging procedure.
 - **Storage Resilience**: Documented "Persistent Ghost Fullness" where InfluxDB WAL writes fail due to intermittent I/O pressure or inode exhaustion despite free disk space.
@@ -425,7 +425,7 @@
     - Backend: Refactored `QueryLogs` to `QueryLogsAdvanced` with a robust `LogFilter` struct.
     - Frontend: Implemented client-side query string parser and UI syntax helper tooltip.
     - Verified filter coverage: `host:`, `level:`, `service:`, `before:`, `after:`, `order:`.
-- **Repository Maintenance**: Pruned non-standard binary artifacts (`datavast-agent`, `datavast-server-bin`) from git tracking.
+- **Repository Maintenance**: Pruned non-standard binary artifacts (`vastlogs-agent`, `vastlogs-server-bin`) from git tracking.
 - **Phase 17: Specialized Resource Monitoring (Phase 1)**:
     - Ported high-fidelity UI from `vast-pulse` for dedicated CPU, Memory, Storage, and Network modules.
     - Implemented reusable glassmorphic widgets: `StatCard` and `ResourceChart`.
@@ -439,7 +439,7 @@
 - **Environment Variable Syntax**: Fixed `nohup` startup issues over SSH by using `export VAR=VAL;` syntax to ensure variables are correctly passed to background processes.
 - **Multi-Node Deployment Verification**: Implemented MD5 checksum comparison between local and remote binaries to verify successful updates on worker nodes:
     - `77.42.84.21` (root) - Verified.
-    - `77.42.67.214` (datavast) - Verified.
+    - `77.42.67.214` (vastlogs) - Verified.
 
 ## [2.2.0-alpha] - 2026-01-19
 
@@ -474,7 +474,7 @@
 ## [1.9.0-alpha] - 2026-01-18
 
 ### Added
-- **Phase 8: Production Deployment**: Successfully deployed DataVast to a remote Hetzner Cloud instance.
+- **Phase 8: Production Deployment**: Successfully deployed VaSTLogs to a remote Hetzner Cloud instance.
 - **Single-Binary Backend**: Updated Go server to serve the React frontend directly via `gin-contrib/static`.
 - **Remote Provisioning**: Automated server setup including Docker installation and directory initialization via SSH.
 - **Artifact Sync**: Implemented release-build workflow and SCP-based deployment.
@@ -493,7 +493,7 @@
 - **Phase 6: Agent Enrollment Handshake**: Implemented interactive agent setup CLI (`--setup`) and server-side secret issuance.
 - **Agent Configuration**: Introduced `agent-config.json` for persisting the `AgentSecret` and `ServerURL`.
 - **Config Hardening**: Expanded `server-config.json` to support `AgentSecrets` map and `SystemAPIKey`.
-- **Multi-Node Deployment Documentation**: Created a guide for connecting remote agents to the central DataVast server.
+- **Multi-Node Deployment Documentation**: Created a guide for connecting remote agents to the central VaSTLogs server.
 
 ## [1.6.0-alpha] - 2026-01-18
 

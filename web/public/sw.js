@@ -1,4 +1,4 @@
-const CACHE_NAME = 'datavast-v1';
+const CACHE_NAME = 'vastlogs-v1';
 const STATIC_ASSETS = [
     '/',
     '/manifest.json',

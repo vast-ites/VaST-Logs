@@ -1,6 +1,6 @@
 {
-    "name": "DataVAST Observability",
-    "short_name": "DataVAST",
+    "name": "VaSTLogs Observability",
+    "short_name": "VaSTLogs",
     "description": "Real-time infrastructure monitoring, log aggregation, and intelligent alerting",
     "start_url": "/",
     "scope": "/",

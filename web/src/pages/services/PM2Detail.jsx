@@ -342,7 +342,7 @@ const PM2Detail = () => {
                     <h2 className="text-xl font-bold text-cyber-text mb-2">No PM2 Data Found</h2>
                     <p className="text-cyber-muted max-w-md">
                         PM2 is not detected or no data has been collected for this host.
-                        Ensure the DataVast agent is running with PM2 collection enabled.
+                        Ensure the VaSTLogs agent is running with PM2 collection enabled.
                     </p>
                 </div>
             )}

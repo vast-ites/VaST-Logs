@@ -8,14 +8,14 @@ export const HostProvider = ({ children }) => {
         const params = new URLSearchParams(window.location.search);
         const urlHost = params.get('host');
         if (urlHost) {
-            localStorage.setItem('datavast_selected_host', urlHost);
+            localStorage.setItem('vastlogs_selected_host', urlHost);
             return urlHost;
         }
-        return localStorage.getItem('datavast_selected_host') || '';
+        return localStorage.getItem('vastlogs_selected_host') || '';
     });
     // Initialize Refresh Rate from localStorage or default to 2000ms
     const [refreshInterval, setRefreshInterval] = useState(() => {
-        const saved = localStorage.getItem('datavast_refresh_rate');
+        const saved = localStorage.getItem('vastlogs_refresh_rate');
         return saved ? Number(saved) : 2000;
     });
 
@@ -25,12 +25,12 @@ export const HostProvider = ({ children }) => {
     // Update localStorage when state changes
     useEffect(() => {
         if (selectedHost) {
-            localStorage.setItem('datavast_selected_host', selectedHost);
+            localStorage.setItem('vastlogs_selected_host', selectedHost);
         }
     }, [selectedHost]);
 
     useEffect(() => {
-        localStorage.setItem('datavast_refresh_rate', refreshInterval);
+        localStorage.setItem('vastlogs_refresh_rate', refreshInterval);
     }, [refreshInterval]);
 
     const fetchHosts = async () => {

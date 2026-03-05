@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/datavast/datavast/server/storage"
+	"github.com/vastlogs/vastlogs/server/storage"
 	"github.com/gin-gonic/gin"
 )
 
@@ -38,7 +38,7 @@ func (h *IngestionHandler) HandleGetServiceStats(c *gin.Context) {
 			countIf(status_code >= 300 AND status_code < 400) as status_3xx,
 			countIf(status_code >= 400 AND status_code < 500) as status_4xx,
 			countIf(status_code >= 500 AND status_code < 600) as status_5xx
-		FROM datavast.access_logs
+		FROM vastlogs.access_logs
 		WHERE service = ? AND timestamp >= ? AND timestamp <= ?
 	`
 
@@ -111,7 +111,7 @@ func (h *IngestionHandler) HandleGetAccessLogs(c *gin.Context) {
 
 	query := `
 		SELECT timestamp, ip, method, path, status_code, bytes_sent, country, city
-		FROM datavast.access_logs
+		FROM vastlogs.access_logs
 		WHERE service = ? AND timestamp >= ? AND timestamp <= ?
 	`
 
@@ -179,7 +179,7 @@ func (h *IngestionHandler) HandleGetGeoStats(c *gin.Context) {
 	// Query for top countries
 	countryQuery := `
 		SELECT country, count() as count
-		FROM datavast.access_logs
+		FROM vastlogs.access_logs
 		WHERE service = ? AND timestamp >= ? AND timestamp <= ? AND country != ''
 	`
 
@@ -213,7 +213,7 @@ func (h *IngestionHandler) HandleGetGeoStats(c *gin.Context) {
 	// Query for top cities
 	cityQuery := `
 		SELECT city, country, count() as count
-		FROM datavast.access_logs
+		FROM vastlogs.access_logs
 		WHERE service = ? AND timestamp >= ? AND timestamp <= ? AND city != ''
 	`
 
@@ -273,7 +273,7 @@ func (h *IngestionHandler) HandleGetTopIPs(c *gin.Context) {
 	// Use argMax to get the LATEST domain and path for that IP
 	query := `
 		SELECT ip, count() as requests, sum(bytes_sent) as bytes, max(country) as country, max(city) as city, max(region) as region, argMax(domain, timestamp) as domain, argMax(path, timestamp) as path
-		FROM datavast.access_logs
+		FROM vastlogs.access_logs
 		WHERE service = ? AND timestamp >= ? AND timestamp <= ?
 
 	`

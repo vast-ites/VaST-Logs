@@ -1,6 +1,6 @@
-# DataVAST Observability Platform
+# VaSTLogs Observability Platform
 
-**DataVAST** is a modern, zero-config observability platform for Linux infrastructure. Built with Go, React, ClickHouse, and InfluxDB, it provides real-time monitoring, log aggregation, and intelligent alerting across your entire fleet — served over **HTTPS** with self-signed TLS support.
+**VaSTLogs** is a modern, zero-config observability platform for Linux infrastructure. Built with Go, React, ClickHouse, and InfluxDB, it provides real-time monitoring, log aggregation, and intelligent alerting across your entire fleet — served over **HTTPS** with self-signed TLS support.
 
 ## ✨ Features
 
@@ -89,8 +89,8 @@ Runs on port `8080`. Automatically serves HTTPS if certificates are found, other
 ```bash
 cd server
 go mod tidy
-go build -o datavast-server
-./datavast-server
+go build -o vastlogs-server
+./vastlogs-server
 ```
 
 > **HTTPS:** To enable TLS, place `server.crt` and `server.key` in a `certs/` directory next to the binary. See the [HTTPS/TLS Setup](#-httpstls-setup) section for details.
@@ -102,8 +102,8 @@ Runs as `root` to discover logs and metrics. Sends data to Server.
 ```bash
 cd agent
 go mod tidy
-go build -o datavast-agent
-sudo ./datavast-agent
+go build -o vastlogs-agent
+sudo ./vastlogs-agent
 ```
 
 ### 5. Start Frontend Dashboard
@@ -197,18 +197,18 @@ The platform uses a secure-by-default approach:
 
 ## 🔒 HTTPS/TLS Setup
 
-DataVAST supports serving over **HTTPS** using self-signed (or CA-signed) TLS certificates. The server automatically detects certificates and enables TLS, falling back to plain HTTP if no certificates are found.
+VaSTLogs supports serving over **HTTPS** using self-signed (or CA-signed) TLS certificates. The server automatically detects certificates and enables TLS, falling back to plain HTTP if no certificates are found.
 
 ### Generate Self-Signed Certificates
 
 ```bash
-sudo mkdir -p /opt/datavast/certs
+sudo mkdir -p /opt/vastlogs/certs
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout /opt/datavast/certs/server.key \
-  -out /opt/datavast/certs/server.crt \
+  -keyout /opt/vastlogs/certs/server.key \
+  -out /opt/vastlogs/certs/server.crt \
   -subj "/CN=your-server-ip" \
   -addext "subjectAltName=IP:your-server-ip"
-sudo chmod 600 /opt/datavast/certs/server.key
+sudo chmod 600 /opt/vastlogs/certs/server.key
 ```
 
 The server looks for certificates at `certs/server.crt` and `certs/server.key` relative to its working directory. If found, it starts with `RunTLS`; otherwise, it uses `Run` (HTTP).
@@ -241,37 +241,37 @@ The server automatically allows both `http://` and `https://` origins for the co
 
 2. **Configure Environment**:
    ```bash
-   sudo mkdir -p /opt/datavast
-   sudo tee /opt/datavast/.env << 'EOF'
+   sudo mkdir -p /opt/vastlogs
+   sudo tee /opt/vastlogs/.env << 'EOF'
    AUTH_ENABLED=true
    JWT_SECRET=$(openssl rand -hex 32)
    INFLUX_TOKEN=your-influxdb-token
    ADMIN_PASSWORD=your-secure-password
    EOF
-   sudo chmod 600 /opt/datavast/.env
+   sudo chmod 600 /opt/vastlogs/.env
    ```
 
 3. **Build & Deploy Server**:
    ```bash
    cd server
-   go build -o datavast-server
-   sudo cp datavast-server /opt/datavast/
+   go build -o vastlogs-server
+   sudo cp vastlogs-server /opt/vastlogs/
    ```
 
    Create the server systemd service:
    ```bash
-   sudo tee /etc/systemd/system/datavast-server.service << 'EOF'
+   sudo tee /etc/systemd/system/vastlogs-server.service << 'EOF'
    [Unit]
-   Description=DataVast Server
+   Description=VaSTLogs Server
    After=network.target
 
    [Service]
    Type=simple
    User=root
-   WorkingDirectory=/opt/datavast
-   EnvironmentFile=/opt/datavast/.env
+   WorkingDirectory=/opt/vastlogs
+   EnvironmentFile=/opt/vastlogs/.env
    Environment=GIN_MODE=release
-   ExecStart=/opt/datavast/datavast-server
+   ExecStart=/opt/vastlogs/vastlogs-server
    Restart=always
    RestartSec=10
 
@@ -280,7 +280,7 @@ The server automatically allows both `http://` and `https://` origins for the co
    EOF
    
    sudo systemctl daemon-reload
-   sudo systemctl enable --now datavast-server
+   sudo systemctl enable --now vastlogs-server
    ```
 
 4. **Build Frontend**:
@@ -294,23 +294,23 @@ The server automatically allows both `http://` and `https://` origins for the co
 5. **Deploy Agent** (on each monitored host):
    ```bash
    cd agent
-   go build -o datavast-agent
+   go build -o vastlogs-agent
    
    # Copy binary
-   sudo mkdir -p /opt/datavast
-   sudo cp datavast-agent /opt/datavast/
+   sudo mkdir -p /opt/vastlogs
+   sudo cp vastlogs-agent /opt/vastlogs/
    
    # Create systemd service
-   sudo tee /etc/systemd/system/datavast-agent.service << 'EOF'
+   sudo tee /etc/systemd/system/vastlogs-agent.service << 'EOF'
    [Unit]
-   Description=DataVast Agent
+   Description=VaSTLogs Agent
    After=network.target
 
    [Service]
    Type=simple
    User=root
-   WorkingDirectory=/opt/datavast
-   ExecStart=/opt/datavast/datavast-agent
+   WorkingDirectory=/opt/vastlogs
+   ExecStart=/opt/vastlogs/vastlogs-agent
    Restart=always
    RestartSec=10
 
@@ -320,11 +320,11 @@ The server automatically allows both `http://` and `https://` origins for the co
    
    # Enable and start service
    sudo systemctl daemon-reload
-   sudo systemctl enable --now datavast-agent
+   sudo systemctl enable --now vastlogs-agent
    ```
 
 ### Agent Configuration
-Create `/opt/datavast/agent-config.json`:
+Create `/opt/vastlogs/agent-config.json`:
 ```json
 {
   "server_url": "https://your-server:8080",
@@ -367,7 +367,7 @@ Create `/opt/datavast/agent-config.json`:
 
 > **⚠️ CORS Note:** In production, you **must** set `CORS_ORIGINS` to the domain(s) your frontend is served from. Without this, browsers will block API requests. Example:
 > ```bash
-> CORS_ORIGINS=https://datavast.example.com,https://10.0.0.5:8080
+> CORS_ORIGINS=https://vastlogs.example.com,https://10.0.0.5:8080
 > ```
 > Multiple origins are separated by commas. Spaces around commas are trimmed automatically.
 
@@ -606,7 +606,7 @@ This project is proprietary software. All rights reserved.
 - [x] `<optgroup>` categorization separating containers from host services
 
 #### Phase 37: L4 Connection Tracking ✅
-- [x] ClickHouse `datavast.connections` table with TTL
+- [x] ClickHouse `vastlogs.connections` table with TTL
 - [x] Backend ingest, summary, and detail API handlers
 - [x] High-frequency (1s) agent collector with process resolution
 - [x] Frontend connection monitoring UI with per-port cards and detail modals

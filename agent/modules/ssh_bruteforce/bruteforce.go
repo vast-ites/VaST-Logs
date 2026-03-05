@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/datavast/datavast/agent/collector"
-	"github.com/datavast/datavast/agent/config"
-	"github.com/datavast/datavast/agent/modules"
-	"github.com/datavast/datavast/agent/sender"
+	"github.com/vastlogs/vastlogs/agent/collector"
+	"github.com/vastlogs/vastlogs/agent/config"
+	"github.com/vastlogs/vastlogs/agent/modules"
+	"github.com/vastlogs/vastlogs/agent/sender"
 	"github.com/hpcloud/tail"
 )
 

@@ -3,14 +3,14 @@ version: '3.8'
 services:
   clickhouse:
     image: clickhouse/clickhouse-server
-    container_name: datavast-clickhouse
+    container_name: vastlogs-clickhouse
     ports:
       - "127.0.0.1:8123:8123"
       - "127.0.0.1:9000:9000"
     environment:
-      - CLICKHOUSE_USER=datavast
+      - CLICKHOUSE_USER=vastlogs
       - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-securepass}
-      - CLICKHOUSE_DB=datavast
+      - CLICKHOUSE_DB=vastlogs
     volumes:
       - ./clickhouse_data:/var/lib/clickhouse
     ulimits:
@@ -23,14 +23,14 @@ services:
 
   influxdb:
     image: influxdb:latest
-    container_name: datavast-influxdb
+    container_name: vastlogs-influxdb
     ports:
       - "127.0.0.1:8086:8086"
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=admin
       - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_PASSWORD:-adminpassword}
-      - DOCKER_INFLUXDB_INIT_ORG=datavast
+      - DOCKER_INFLUXDB_INIT_ORG=vastlogs
       - DOCKER_INFLUXDB_INIT_BUCKET=metrics
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN:-my-super-secret-auth-token}
     volumes:

@@ -1,4 +1,4 @@
-# DataVast User Guide
+# VaSTLogs User Guide
 
 **Version:** 2.2.0 (Phase 19)
 **Date:** February 2026
@@ -25,7 +25,7 @@
 
 ## 1. Overview
 
-**DataVast** is a real-time observability platform designed for modern Linux infrastructure. It provides a unified view of your servers, containers, applications, and network traffic without the complexity of traditional monitoring stacks.
+**VaSTLogs** is a real-time observability platform designed for modern Linux infrastructure. It provides a unified view of your servers, containers, applications, and network traffic without the complexity of traditional monitoring stacks.
 
 **Key Capabilities:**
 - **Zero-Config Agent**: Auto-discovers logs, processes, and docker containers.
@@ -39,7 +39,7 @@
 
 ### 2.1 Server Deployment
 
-The DataVast Server is the central brain. It requires **ClickHouse** (Logs/Traces) and **InfluxDB** (Metrics).
+The VaSTLogs Server is the central brain. It requires **ClickHouse** (Logs/Traces) and **InfluxDB** (Metrics).
 
 **Prerequisites:**
 - Linux Server (Ubuntu 20.04+ recommended)
@@ -48,43 +48,43 @@ The DataVast Server is the central brain. It requires **ClickHouse** (Logs/Trace
 **Steps:**
 1.  **Clone/Download Registry**:
     ```bash
-    git clone https://github.com/datavast/platform.git /opt/datavast
-    cd /opt/datavast/deployment
+    git clone https://github.com/vastlogs/platform.git /opt/vastlogs
+    cd /opt/vastlogs/deployment
     ```
 
 2.  **Start Databases**:
     ```bash
     docker-compose up -d
-    # Verifying running containers: datavast-clickhouse, datavast-influxdb
+    # Verifying running containers: vastlogs-clickhouse, vastlogs-influxdb
     ```
 
 3.  **Start Server**:
     ```bash
-    # Ensure binary is in /opt/datavast/server/bin
-    ./datavast-server
+    # Ensure binary is in /opt/vastlogs/server/bin
+    ./vastlogs-server
     ```
     *The server listens on port `8080` by default.*
 
 ### 2.2 Agent Deployment
 
-The DataVast Agent must be installed on **every** host you want to monitor.
+The VaSTLogs Agent must be installed on **every** host you want to monitor.
 
 1.  **Installation**:
-    Copy the `datavast-agent` binary to the target host (e.g., via SCP).
+    Copy the `vastlogs-agent` binary to the target host (e.g., via SCP).
     ```bash
-    scp datavast-agent root@target-ip:/usr/local/bin/
-    ssh root@target-ip "chmod +x /usr/local/bin/datavast-agent"
+    scp vastlogs-agent root@target-ip:/usr/local/bin/
+    ssh root@target-ip "chmod +x /usr/local/bin/vastlogs-agent"
     ```
 
 2.  **Create Service**:
-    Create a systemd unit file at `/etc/systemd/system/datavast-agent.service`:
+    Create a systemd unit file at `/etc/systemd/system/vastlogs-agent.service`:
     ```ini
     [Unit]
-    Description=DataVast Agent
+    Description=VaSTLogs Agent
     After=network.target
 
     [Service]
-    ExecStart=/usr/local/bin/datavast-agent
+    ExecStart=/usr/local/bin/vastlogs-agent
     Restart=always
     User=root
     # Environment Variables (Optional override)
@@ -98,18 +98,18 @@ The DataVast Agent must be installed on **every** host you want to monitor.
 3.  **Start Agent**:
     ```bash
     systemctl daemon-reload
-    systemctl enable --now datavast-agent
+    systemctl enable --now vastlogs-agent
     ```
 
 ---
 
 ## 3. Configuration
 
-The agent creates a default configuration on first run. You can customize it by editing `/opt/datavast/agent-config.json` (or `/etc/datavast/agent.yaml`).
+The agent creates a default configuration on first run. You can customize it by editing `/opt/vastlogs/agent-config.json` (or `/etc/vastlogs/agent.yaml`).
 
 ### 3.1 Agent Configuration
 
-**File Path:** `/opt/datavast/agent-config.json`
+**File Path:** `/opt/vastlogs/agent-config.json`
 
 **Structure:**
 ```json
@@ -156,16 +156,16 @@ Only collect specific files defined in `selected_logs`.
 
 ### 3.3 Database & Service Monitoring
 
-DataVast has specialized collectors that go beyond simple log tailing. To enable them, set the corresponding flag to `true` in `collectors`.
+VaSTLogs has specialized collectors that go beyond simple log tailing. To enable them, set the corresponding flag to `true` in `collectors`.
 
 | Service | Config Flag | Requirements | Metrics Collected |
 | :--- | :--- | :--- | :--- |
 | **Nginx** | `"nginx": true` | Logs at `/var/log/nginx` | throughput, status codes, latency |
 | **Apache** | `"apache": true` | Logs at `/var/log/apache2` | throughput, status codes |
-| **MySQL** | `"mysql": true` | User `datavast` with READ access | QPS, Connections, Slow Queries, Buffer Pool |
-| **Postgres** | `"postgresql": true` | User `datavast` | TPS, Locks, Cache Hit Ratio |
+| **MySQL** | `"mysql": true` | User `vastlogs` with READ access | QPS, Connections, Slow Queries, Buffer Pool |
+| **Postgres** | `"postgresql": true` | User `vastlogs` | TPS, Locks, Cache Hit Ratio |
 | **Redis** | `"redis": true` | Auth via Env Var | Ops/sec, Memory, Evictions |
-| **MongoDB** | `"mongodb": true` | User `datavast` | Ops/sec, Connections, Replication Lag |
+| **MongoDB** | `"mongodb": true` | User `vastlogs` | Ops/sec, Connections, Replication Lag |
 | **PM2** | `"pm2": true` | `pm2` command in PATH | Process status, Restarts, CPU/Mem per proc |
 
 ---
@@ -207,7 +207,7 @@ Enable the Database Profiler to track slow operations.
 
 ### 3.5 Server Environment Variables (`.env`)
 
-The DataVast server reads its configuration from a `.env` file located in the working directory (typically `/opt/datavast/.env`).
+The VaSTLogs server reads its configuration from a `.env` file located in the working directory (typically `/opt/vastlogs/.env`).
 
 **Example `.env` file:**
 ```bash
@@ -226,20 +226,20 @@ CORS_ORIGINS=https://your-domain.com,https://your-server-ip:8080
 
 #### CORS Configuration
 
-The `CORS_ORIGINS` variable controls which frontend domains are allowed to make API requests to the DataVast server. This is a **required** setting in production.
+The `CORS_ORIGINS` variable controls which frontend domains are allowed to make API requests to the VaSTLogs server. This is a **required** setting in production.
 
 | Scenario | Value |
 | :--- | :--- |
 | **Local development** | Not set (defaults to `http://localhost:5173`) |
-| **Single domain** | `CORS_ORIGINS=https://datavast.example.com` |
-| **IP + domain access** | `CORS_ORIGINS=https://datavast.example.com,https://10.0.0.5:8080` |
+| **Single domain** | `CORS_ORIGINS=https://vastlogs.example.com` |
+| **IP + domain access** | `CORS_ORIGINS=https://vastlogs.example.com,https://10.0.0.5:8080` |
 | **HTTP + HTTPS** | `CORS_ORIGINS=https://example.com,http://example.com:8080` |
 
 > **Notes:**
 > - Multiple origins are separated by commas. Spaces around commas are automatically trimmed.
 > - Each origin must include the protocol (`http://` or `https://`) and port (if non-standard).
 > - Do **not** use wildcard (`*`) — it is not supported when credentials are enabled.
-> - After changing `.env`, restart the server: `systemctl restart datavast-server`
+> - After changing `.env`, restart the server: `systemctl restart vastlogs-server`
 
 ---
 
@@ -283,4 +283,4 @@ A: Ensure the specific collector is enabled in `agent-config.json` (e.g., `"ngin
 A: Check if the agent is running as root (required to see all sockets). Also ensure your browser can reach the API (check Console for 401 errors if Auth is enabled).
 
 **Q: Agent is not registering.**
-A: Check the `SERVER_URL` in `agent-config.json`. Ensure port `8080` is open on the server firewall. Check agent logs: `journalctl -u datavast-agent -f`.
+A: Check the `SERVER_URL` in `agent-config.json`. Ensure port `8080` is open on the server firewall. Check agent logs: `journalctl -u vastlogs-agent -f`.

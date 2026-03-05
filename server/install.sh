@@ -2,7 +2,7 @@
 set -e
 
 echo "======================================"
-echo "  DataVAST Agent Quick Installer"
+echo "  VaSTLogs Agent Quick Installer"
 echo "======================================"
 
 API_KEY=""
@@ -38,7 +38,7 @@ if [ -z "$SERVER_URL" ]; then
     exit 1
 fi
 
-echo "🚀 Installing DataVAST Agent for host: $HOST"
+echo "🚀 Installing VaSTLogs Agent for host: $HOST"
 echo "🌐 Connecting to server: $SERVER_URL"
 
 # 1. Register the Agent
@@ -75,14 +75,14 @@ echo "✅ Registration successful!"
 
 # 2. Download the agent binary
 echo "⬇️  Downloading agent binary..."
-curl -sLk "$SERVER_URL/agent/download" -o /usr/local/bin/datavast-agent
-chmod +x /usr/local/bin/datavast-agent
+curl -sLk "$SERVER_URL/agent/download" -o /usr/local/bin/vastlogs-agent
+chmod +x /usr/local/bin/vastlogs-agent
 
 # 3. Create config
 echo "⚙️  Configuring agent..."
-mkdir -p /etc/datavast
+mkdir -p /etc/vastlogs
 
-cat << EOF > /etc/datavast/agent-config.json
+cat << EOF > /etc/vastlogs/agent-config.json
 {
   "server_url": "$SERVER_URL",
   "agent_id": "$HOST",
@@ -103,16 +103,16 @@ EOF
 
 # 4. Create systemd service
 echo "📝 Creating systemd service..."
-cat << 'EOF' > /etc/systemd/system/datavast-agent.service
+cat << 'EOF' > /etc/systemd/system/vastlogs-agent.service
 [Unit]
-Description=DataVAST Observability Agent
+Description=VaSTLogs Observability Agent
 After=network.target
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/etc/datavast
-ExecStart=/usr/local/bin/datavast-agent
+WorkingDirectory=/etc/vastlogs
+ExecStart=/usr/local/bin/vastlogs-agent
 Restart=always
 RestartSec=5
 
@@ -123,7 +123,7 @@ EOF
 # 5. Enable and start
 echo "🔄 Starting service..."
 systemctl daemon-reload
-systemctl enable datavast-agent
-systemctl restart datavast-agent
+systemctl enable vastlogs-agent
+systemctl restart vastlogs-agent
 
-echo "✅ DataVAST Agent installed and started successfully on $HOST!"
+echo "✅ VaSTLogs Agent installed and started successfully on $HOST!"

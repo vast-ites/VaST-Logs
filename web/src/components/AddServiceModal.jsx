@@ -148,7 +148,7 @@ const AddServiceModal = ({ isOpen, onClose }) => {
                                         <li>SSH into your server.</li>
                                         <li>Open <code className="bg-cyber-gray/20 px-1 rounded text-cyber-text">agent-config.json</code></li>
                                         <li>Merge the snippet above into your config.</li>
-                                        <li>Restart the agent: <code className="bg-cyber-gray/20 px-1 rounded text-cyber-text">systemctl restart datavast-agent</code></li>
+                                        <li>Restart the agent: <code className="bg-cyber-gray/20 px-1 rounded text-cyber-text">systemctl restart vastlogs-agent</code></li>
                                     </ol>
                                 </div>
                             </div>

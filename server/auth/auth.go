@@ -8,7 +8,7 @@ import (
     "time"
 
     "github.com/golang-jwt/jwt/v5"
-    "github.com/datavast/datavast/server/storage"
+    "github.com/vastlogs/vastlogs/server/storage"
     "golang.org/x/crypto/bcrypt"
 )
 

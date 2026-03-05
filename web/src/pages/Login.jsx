@@ -103,7 +103,7 @@ const Login = () => {
 
                 <div className="mt-8 pt-6 border-t border-cyber-dim text-center">
                     <p className="text-[10px] text-cyber-muted font-mono">
-                        SYSTEM ID: DATAVAST-CORE-V1 <br />
+                        SYSTEM ID: VASTLOGS-CORE-V1 <br />
                         IP: {window.location.hostname}
                     </p>
                 </div>

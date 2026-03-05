@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/datavast/datavast/agent/collector"
+	"github.com/vastlogs/vastlogs/agent/collector"
 )
 
 type Client struct {

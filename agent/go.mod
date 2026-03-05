@@ -1,4 +1,4 @@
-module github.com/datavast/datavast/agent
+module github.com/vastlogs/vastlogs/agent
 
 go 1.25.5
 

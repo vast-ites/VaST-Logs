@@ -12,7 +12,7 @@ import (
     "io"
     "sync"
 
-    "github.com/datavast/datavast/server/storage"
+    "github.com/vastlogs/vastlogs/server/storage"
 )
 
 type AlertService struct {
@@ -225,7 +225,7 @@ func (s *AlertService) sendEmail(to []string, message string) {
     if cfg.SMTPServer == "" || len(to) == 0 { return }
     
     auth := smtp.PlainAuth("", cfg.SMTPUser, cfg.SMTPPassword, cfg.SMTPServer)
-    msg := []byte(fmt.Sprintf("To: %s\r\nSubject: DataVast Alert\r\n\r\n%s\r\n", strings.Join(to, ","), message))
+    msg := []byte(fmt.Sprintf("To: %s\r\nSubject: VaSTLogs Alert\r\n\r\n%s\r\n", strings.Join(to, ","), message))
     addr := fmt.Sprintf("%s:%d", cfg.SMTPServer, cfg.SMTPPort)
     if err := smtp.SendMail(addr, auth, cfg.SMTPUser, to, msg); err != nil {
         log.Printf("Email failed: %v", err)

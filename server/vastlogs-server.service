@@ -1,0 +1,13 @@
+[Unit]
+Description=VaSTLogs Backend Server
+After=network.target
+
+[Service]
+ExecStart=/opt/vastlogs/vastlogs-server
+Restart=always
+User=root
+WorkingDirectory=/opt/vastlogs
+Environment=GIN_MODE=release
+
+[Install]
+WantedBy=multi-user.target

@@ -8,7 +8,7 @@ import (
 // GenerateMFA generates a new TOTP secret and QR code URL
 func GenerateMFA(accountName string) (secret string, url string, err error) {
     key, err := totp.Generate(totp.GenerateOpts{
-        Issuer:      "DataVast",
+        Issuer:      "VaSTLogs",
         AccountName: accountName,
     })
     if err != nil {

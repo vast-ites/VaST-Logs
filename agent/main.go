@@ -17,14 +17,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/datavast/datavast/agent/collector"
-	"github.com/datavast/datavast/agent/collector/services"
-	"github.com/datavast/datavast/agent/config"
-	"github.com/datavast/datavast/agent/discovery"
-	"github.com/datavast/datavast/agent/sender"
+	"github.com/vastlogs/vastlogs/agent/collector"
+	"github.com/vastlogs/vastlogs/agent/collector/services"
+	"github.com/vastlogs/vastlogs/agent/config"
+	"github.com/vastlogs/vastlogs/agent/discovery"
+	"github.com/vastlogs/vastlogs/agent/sender"
 
-	"github.com/datavast/datavast/agent/modules"
-	_ "github.com/datavast/datavast/agent/modules/all"
+	"github.com/vastlogs/vastlogs/agent/modules"
+	_ "github.com/vastlogs/vastlogs/agent/modules/all"
 )
 
 func main() {
@@ -32,8 +32,8 @@ func main() {
 	hostFlag := flag.String("host", "", "Override Hostname")
 	flag.Parse()
 
-	fmt.Println("🚀 DataVast Agent Starting... [Sci-Fi Mode]")
-	log.Println(">> DataVast Agent v2.21.0 (Phase 40 - Service Detection & Advanced Diagnostics)")
+	fmt.Println("🚀 VaSTLogs Agent Starting... [Sci-Fi Mode]")
+	log.Println(">> VaSTLogs Agent v2.21.0 (Phase 40 - Service Detection & Advanced Diagnostics)")
 
 	// Load Config
 	cfg, err := config.LoadConfig()
@@ -50,7 +50,7 @@ func main() {
 			serverURL = "http://localhost:8080"
 		}
 		fmt.Println(">> No config found. Using Fallback/Env URL:", serverURL)
-		fmt.Println(">> Tip: Run './datavast-agent --setup' for secure enrollment.")
+		fmt.Println(">> Tip: Run './vastlogs-agent --setup' for secure enrollment.")
 
 		cfg = &config.AgentConfig{
 			ServerURL: serverURL,
@@ -458,7 +458,7 @@ func main() {
 
 func runSetup() {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("\n=== DataVast Agent Enrollment ===")
+	fmt.Println("\n=== VaSTLogs Agent Enrollment ===")
 
 	// 1. Server URL
 	fmt.Print("Enter Server URL [http://localhost:8080]: ")

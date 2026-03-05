@@ -207,7 +207,7 @@ func scanDirectory(root string) []DiscoveredLog {
            strings.HasSuffix(name, "btmp") || strings.HasSuffix(name, "lastlog") ||
            strings.HasSuffix(name, ".1") || strings.HasSuffix(name, ".2") ||
            strings.HasSuffix(name, ".old") || strings.HasSuffix(name, ".bak") ||
-           strings.Contains(name, "datavast") || strings.Contains(name, "agent.log") {
+           strings.Contains(name, "vastlogs") || strings.Contains(name, "agent.log") {
             return nil
         }
 
