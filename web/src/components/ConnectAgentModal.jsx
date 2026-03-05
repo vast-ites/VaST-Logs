@@ -9,8 +9,13 @@ const ConnectAgentModal = ({ isOpen, onClose }) => {
 
     useEffect(() => {
         if (isOpen) {
+            const token = localStorage.getItem('token');
             // Fetch Settings to get API Key
-            fetch('/api/v1/settings')
+            fetch('/api/v1/settings', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
                 .then(res => res.json())
                 .then(data => {
                     if (data && data.system_api_key) {
