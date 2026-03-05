@@ -24,6 +24,19 @@ import { HostProvider } from './contexts/HostContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 
+// Global Fetch Interceptor for Automatic Logout on 401 Unauthorized
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+  const response = await originalFetch(...args);
+  if (response.status === 401 && window.location.pathname !== '/login') {
+    console.warn('⚡ Session invalid or expired. Auto-logging out (401).');
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    window.location.href = '/login';
+  }
+  return response;
+};
+
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   return token ? children : <Navigate to="/login" />;
