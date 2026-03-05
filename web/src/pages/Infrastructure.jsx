@@ -7,7 +7,10 @@ const Infrastructure = () => {
 
     const fetchContainers = async () => {
         try {
-            const res = await fetch('/api/v1/metrics/containers');
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/v1/metrics/containers', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (res.ok) {
                 const data = await res.json();
                 setContainers(data || []);
