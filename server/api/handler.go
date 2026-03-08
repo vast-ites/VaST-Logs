@@ -597,7 +597,9 @@ func SetupRoutes(r *gin.Engine, h *IngestionHandler) {
             adminRoutes.DELETE("/alerts/channels/:id", h.HandleDeleteChannel)
             
             adminRoutes.POST("/alerts/silence", h.HandleSilenceAlert)
+            adminRoutes.POST("/alerts/silence-all", h.HandleSilenceAllAlerts)
             adminRoutes.POST("/alerts/unsilence", h.HandleUnsilenceAlert)
+            adminRoutes.POST("/alerts/unsilence-all", h.HandleUnsilenceAllAlerts)
             adminRoutes.GET("/alerts/fired", h.HandleGetFiredAlerts)
 
             // User Management
@@ -1666,6 +1668,35 @@ func (h *IngestionHandler) HandleSilenceAlert(c *gin.Context) {
     c.Status(http.StatusOK)
 }
 
+func (h *IngestionHandler) HandleSilenceAllAlerts(c *gin.Context) {
+    var req struct {
+        Duration string `json:"duration"` // e.g. "1h"
+    }
+    if err := c.BindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+
+    d, err := time.ParseDuration(req.Duration)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid duration format (e.g., 1h, 30m)"})
+        return
+    }
+    
+    cfg := h.Config.Get()
+    
+    // Apply silence to all rules for wildcard host "*"
+    for i := range cfg.AlertRules {
+        if cfg.AlertRules[i].Silenced == nil {
+            cfg.AlertRules[i].Silenced = make(map[string]time.Time)
+        }
+        cfg.AlertRules[i].Silenced["*"] = time.Now().Add(d)
+    }
+    
+    h.Config.Save(cfg)
+    c.Status(http.StatusOK)
+}
+
 func (h *IngestionHandler) HandleUnsilenceAlert(c *gin.Context) {
     var req struct {
         RuleID string `json:"rule_id"`
@@ -1682,6 +1713,18 @@ func (h *IngestionHandler) HandleUnsilenceAlert(c *gin.Context) {
             delete(cfg.AlertRules[i].Silenced, req.Host)
             break
         }
+    }
+    
+    h.Config.Save(cfg)
+    c.Status(http.StatusOK)
+}
+
+func (h *IngestionHandler) HandleUnsilenceAllAlerts(c *gin.Context) {
+    cfg := h.Config.Get()
+    
+    // Clear the Silenced map for all rules globally
+    for i := range cfg.AlertRules {
+        cfg.AlertRules[i].Silenced = make(map[string]time.Time)
     }
     
     h.Config.Save(cfg)
