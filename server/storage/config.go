@@ -49,6 +49,9 @@ type SystemConfig struct {
     AgentSecrets   map[string]string `json:"agent_secrets"` 
     IgnoredHosts   []string `json:"ignored_hosts"` 
 
+    TelemetryEnabled *bool  `json:"telemetry_enabled"`
+    InstanceID       string `json:"instance_id"`
+
     Users  []User        `json:"users"`
     Groups []ServerGroup `json:"groups"`
 }
@@ -117,6 +120,12 @@ func (s *ConfigStore) Load() error {
     // Ensure AgentSecrets map is initialized
     if s.Config.AgentSecrets == nil {
         s.Config.AgentSecrets = make(map[string]string)
+    }
+
+    // Initialize Telemetry Instance ID if not set
+    if s.Config.InstanceID == "" {
+        s.Config.InstanceID = generateRandomKey(32)
+        s.saveInternal() // Save back to file
     }
 
     return nil

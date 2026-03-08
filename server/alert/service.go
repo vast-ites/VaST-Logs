@@ -13,6 +13,7 @@ import (
     "sync"
 
     "github.com/vastlogs/vastlogs/server/storage"
+    "github.com/vastlogs/vastlogs/server/telemetry"
 )
 
 type AlertService struct {
@@ -164,6 +165,8 @@ func (s *AlertService) EvaluateRules(host string, metrics map[string]float64, ho
                     Resolved:  false,
                 })
             }
+
+            telemetry.Track("alert", "fired", 1.0)
 
             // Dispatch
             s.DispatchRule(rule, channels, msg)

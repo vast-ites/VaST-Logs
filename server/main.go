@@ -14,6 +14,7 @@ import (
 	"github.com/vastlogs/vastlogs/server/auth"
 	"github.com/vastlogs/vastlogs/server/geoip"
 	"github.com/vastlogs/vastlogs/server/storage"
+    "github.com/vastlogs/vastlogs/server/telemetry"
 	"github.com/gin-contrib/cors"
 	// "github.com/gin-contrib/gzip"
 	// "github.com/gin-contrib/static"
@@ -90,6 +91,9 @@ func main() {
 	config := storage.NewConfigStore("server-config.json")
 	authMgr := auth.NewAuthManager(config)
 	alertMgr := alert.NewAlertService(config, clickh, influx)
+
+    // Initialize telemetry
+    telemetry.Initialize(config)
 
 	// Apply configured retention policy to ClickHouse
 	if retDays := config.Get().RetentionDays; retDays > 0 {

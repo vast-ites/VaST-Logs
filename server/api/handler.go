@@ -16,6 +16,7 @@ import (
     "github.com/vastlogs/vastlogs/server/geoip"
     "github.com/vastlogs/vastlogs/server/auth"
     "github.com/vastlogs/vastlogs/server/alert"
+    "github.com/vastlogs/vastlogs/server/telemetry"
 	"github.com/gin-gonic/gin"
 
     "github.com/golang-jwt/jwt/v5"
@@ -1179,6 +1180,7 @@ func (h *IngestionHandler) HandleSaveSettings(c *gin.Context) {
         SMTPPort      int      `json:"smtp_port"`
         SMTPUser      string   `json:"smtp_user"`
         SMTPPassword  string   `json:"smtp_password"`
+        TelemetryEnabled *bool `json:"telemetry_enabled"`
     }
     if err := c.BindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -1198,6 +1200,10 @@ func (h *IngestionHandler) HandleSaveSettings(c *gin.Context) {
     current.SMTPPort = req.SMTPPort
     current.SMTPUser = req.SMTPUser
     current.SMTPPassword = req.SMTPPassword
+    
+    if req.TelemetryEnabled != nil {
+        current.TelemetryEnabled = req.TelemetryEnabled
+    }
     
     // Save
     if err := h.Config.Save(current); err != nil {
@@ -1262,6 +1268,8 @@ func (h *IngestionHandler) HandleLogin(c *gin.Context) {
         c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
         return
     }
+    
+    telemetry.Track("feature", "user_login", 1.0)
     
     c.JSON(http.StatusOK, gin.H{
         "token": token,
