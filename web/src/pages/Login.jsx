@@ -1,13 +1,42 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Shield, Lock, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Shield, Lock, AlertTriangle, Key } from 'lucide-react';
 
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [ssoProviders, setSsoProviders] = useState([]);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Check for token in hash (from SSO callback redirect)
+    useEffect(() => {
+        const hash = window.location.hash;
+        if (hash && hash.includes("token=")) {
+            const token = new URLSearchParams(hash.substring(1)).get("token");
+            if (token) {
+                localStorage.setItem('token', token);
+                // Clean hash
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                // We don't have role/username immediately here without decoding JWT, 
+                // but the backend will validate the token on next request. 
+                // The easiest way is to reload.
+                window.location.href = '/';
+            }
+        }
+
+        // Fetch active SSO Providers
+        fetch('/api/v1/auth/sso/providers')
+            .then(res => res.json())
+            .then(data => {
+                if (data && !data.error) {
+                    setSsoProviders(data);
+                }
+            })
+            .catch(err => console.error("Failed to load SSO providers:", err));
+    }, []);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -100,6 +129,25 @@ const Login = () => {
                         {loading ? 'AUTHENTICATING...' : 'AUTHENTICATE'}
                     </button>
                 </form>
+
+                {ssoProviders.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-cyber-dim">
+                        <p className="text-center text-xs text-cyber-muted font-mono mb-4">OR SIGN IN WITH</p>
+                        <div className="space-y-3">
+                            {ssoProviders.map(p => (
+                                <button
+                                    key={p.id}
+                                    onClick={() => {
+                                        window.location.href = `/api/v1/auth/sso/login/${p.id}`;
+                                    }}
+                                    className="w-full py-2.5 px-4 rounded border border-cyber-blue/50 text-cyber-blue hover:bg-cyber-blue/10 flex items-center justify-center gap-2 text-sm font-bold tracking-wide transition-all"
+                                >
+                                    <Key size={16} /> {p.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 <div className="mt-8 pt-6 border-t border-cyber-dim text-center">
                     <p className="text-[10px] text-cyber-muted font-mono">

@@ -530,6 +530,15 @@ func SetupRoutes(r *gin.Engine, h *IngestionHandler) {
         // Agent Registration (validates system_api_key in handler, no middleware)
 		v1.POST("/agent/register", h.HandleRegisterAgent)
 
+        // SSO Public Endpoints
+        ssoAuthRoutes := v1.Group("/auth/sso")
+        {
+            ssoAuthRoutes.GET("/providers", h.HandleGetPublicSSOProviders)
+            ssoAuthRoutes.GET("/login/:id", h.HandleSSOLogin)
+            ssoAuthRoutes.GET("/callback/:id", h.HandleSSOCallback)
+            ssoAuthRoutes.POST("/callback/:id", h.HandleSSOCallback) 
+        }
+
         // Agent Ingestion (requires X-Agent-Secret header)
         agentRoutes := v1.Group("/")
         agentRoutes.Use(AgentSecretAuth(h.Config))
@@ -584,6 +593,12 @@ func SetupRoutes(r *gin.Engine, h *IngestionHandler) {
             adminRoutes.POST("/mfa/setup", h.HandleSetupMFA)
             adminRoutes.POST("/mfa/enable", h.HandleEnableMFA)
             adminRoutes.POST("/mfa/disable", h.HandleDisableMFA)
+            
+            // SSO Providers Management
+            adminRoutes.GET("/settings/sso-providers", h.HandleGetSSOProviders)
+            adminRoutes.POST("/settings/sso-providers", h.HandleCreateSSOProvider)
+            adminRoutes.PUT("/settings/sso-providers/:id", h.HandleUpdateSSOProvider)
+            adminRoutes.DELETE("/settings/sso-providers/:id", h.HandleDeleteSSOProvider)
             
             // Alert Management
             adminRoutes.GET("/alerts/rules", h.HandleGetAlertRules)

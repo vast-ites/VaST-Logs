@@ -27,6 +27,26 @@ type NotificationChannel struct {
     Config map[string]string `json:"config"` // URL, Email Address, etc.
 }
 
+type SSOProvider struct {
+    ID           string `json:"id"`
+    Name         string `json:"name"` // E.g., "Google", "Okta", "Keycloak"
+    Type         string `json:"type"` // "oauth2", "oidc", "saml"
+    Enabled      bool   `json:"enabled"`
+    
+    // OAuth2 / OIDC fields
+    ClientID     string `json:"client_id"`
+    ClientSecret string `json:"client_secret"`
+    IssuerURL    string `json:"issuer_url"`
+    AuthURL      string `json:"auth_url"`
+    TokenURL     string `json:"token_url"`
+    Scopes       string `json:"scopes"` // Comma-separated
+
+    // SAML specific fields
+    IDPMetadataURL string `json:"idp_metadata_url"`
+    SPCert         string `json:"sp_cert"` // Optional if needed for signed requests
+    SPKey          string `json:"sp_key"`
+}
+
 type SystemConfig struct {
 	RetentionDays  int     `json:"retention_days"`
 	DDoSThreshold  float64 `json:"ddos_threshold"`
@@ -36,6 +56,7 @@ type SystemConfig struct {
     
     AlertRules           []AlertRule           `json:"alert_rules"`
     NotificationChannels []NotificationChannel `json:"notification_channels"`
+    SSOProviders         []SSOProvider         `json:"sso_providers"`
 
     SMTPServer     string    `json:"smtp_server"`
     SMTPPort       int       `json:"smtp_port"`

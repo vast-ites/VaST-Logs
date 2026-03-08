@@ -121,6 +121,11 @@ const Settings = () => {
     const [showSMTP, setShowSMTP] = useState(false);
     const [telemetryEnabled, setTelemetryEnabled] = useState(false);
 
+    // SSO Providers State
+    const [ssoProviders, setSsoProviders] = useState([]);
+    const [editingSso, setEditingSso] = useState(null); // ID of provider being edited or 'new'
+    const [ssoForm, setSsoForm] = useState({ name: '', type: 'oidc', enabled: true, client_id: '', client_secret: '', issuer_url: '', scopes: '' });
+
     const [saving, setSaving] = useState(false);
     const [status, setStatus] = useState("");
 
@@ -171,6 +176,16 @@ const Settings = () => {
                 }
             })
             .catch(err => console.error("Failed to load settings:", err));
+
+        // Load SSO Providers
+        fetch('/api/v1/settings/sso-providers', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data && !data.error) setSsoProviders(data || []);
+            })
+            .catch(err => console.error("Failed to load SSO Providers:", err));
     }, []);
 
     const startMfaSetup = async () => {
@@ -657,6 +672,148 @@ const Settings = () => {
 
                 {/* User Governance */}
                 {/* Moved to separate page /users */}
+
+                {/* SSO Configuration */}
+                <div className="glass-panel p-6 rounded-xl border border-cyber-gray md:col-span-2">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-lg font-bold text-cyber-blue flex items-center gap-2">
+                            <Shield size={18} /> SSO Providers (OAuth2 / OIDC)
+                        </h3>
+                        <button
+                            onClick={() => {
+                                setEditingSso('new');
+                                setSsoForm({ name: '', type: 'oidc', enabled: true, client_id: '', client_secret: '', issuer_url: '', scopes: 'openid,profile,email' });
+                            }}
+                            className="bg-cyber-blue/10 text-cyber-blue border border-cyber-blue/50 px-3 py-1.5 rounded hover:bg-cyber-blue/20 transition-colors text-sm font-semibold"
+                        >
+                            + ADD PROVIDER
+                        </button>
+                    </div>
+
+                    <div className="space-y-4">
+                        {ssoProviders.map(p => (
+                            <div key={p.id} className="bg-cyber-gray/10 border border-cyber-gray/30 p-4 rounded flex items-center justify-between">
+                                <div>
+                                    <h4 className="font-bold text-cyber-text flex items-center gap-2">
+                                        {p.name}
+                                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${p.enabled ? 'bg-cyber-green/20 text-cyber-green border border-cyber-green/50' : 'bg-cyber-gray/40 text-cyber-muted'}`}>
+                                            {p.enabled ? 'ACTIVE' : 'DISABLED'}
+                                        </span>
+                                    </h4>
+                                    <p className="text-sm text-cyber-muted font-mono mt-1">Type: {p.type.toUpperCase()}</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setEditingSso(p.id);
+                                            setSsoForm({ ...p });
+                                        }}
+                                        className="text-cyber-blue hover:text-white px-3 py-1"
+                                    >
+                                        EDIT
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            if (!window.confirm(`Delete provider ${p.name}?`)) return;
+                                            const token = localStorage.getItem('token');
+                                            try {
+                                                const res = await fetch(`/api/v1/settings/sso-providers/${p.id}`, {
+                                                    method: 'DELETE',
+                                                    headers: { 'Authorization': `Bearer ${token}` }
+                                                });
+                                                if (res.ok) {
+                                                    setSsoProviders(ssoProviders.filter(x => x.id !== p.id));
+                                                }
+                                            } catch (err) { console.error(err); }
+                                        }}
+                                        className="text-red-400 hover:text-red-300 px-3 py-1"
+                                    >
+                                        DELETE
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {ssoProviders.length === 0 && !editingSso && (
+                            <p className="text-sm text-cyber-muted italic text-center py-4">No SSO providers configured.</p>
+                        )}
+                    </div>
+
+                    {editingSso && (
+                        <div className="mt-6 bg-cyber-black/50 border border-cyber-dim p-4 rounded-lg space-y-4">
+                            <h4 className="font-bold text-cyber-cyan mb-2 border-b border-cyber-dim pb-2">
+                                {editingSso === 'new' ? 'Add New Provider' : 'Edit Provider'}
+                            </h4>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs text-cyber-muted block mb-1">Provider Name</label>
+                                    <input value={ssoForm.name} onChange={e => setSsoForm({ ...ssoForm, name: e.target.value })} placeholder="e.g. Corporate Google" className="w-full bg-cyber-gray/20 border border-cyber-dim rounded px-3 py-2 text-sm text-cyber-text outline-none focus:border-cyber-blue" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-cyber-muted block mb-1">Type</label>
+                                    <select value={ssoForm.type} onChange={e => setSsoForm({ ...ssoForm, type: e.target.value })} className="w-full bg-cyber-gray/20 border border-cyber-dim rounded px-3 py-2 text-sm text-cyber-text outline-none focus:border-cyber-blue appearance-none">
+                                        <option value="oidc">OpenID Connect (OIDC)</option>
+                                        <option value="oauth2">OAuth 2.0</option>
+                                    </select>
+                                </div>
+                                <div className="col-span-2">
+                                    <label className="text-xs text-cyber-muted block mb-1">Issuer URL (for OIDC Discovery)</label>
+                                    <input value={ssoForm.issuer_url} onChange={e => setSsoForm({ ...ssoForm, issuer_url: e.target.value })} placeholder="https://accounts.google.com" className="w-full bg-cyber-gray/20 border border-cyber-dim rounded px-3 py-2 text-sm text-cyber-text outline-none focus:border-cyber-blue" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-cyber-muted block mb-1">Client ID</label>
+                                    <input value={ssoForm.client_id} onChange={e => setSsoForm({ ...ssoForm, client_id: e.target.value })} className="w-full bg-cyber-gray/20 border border-cyber-dim rounded px-3 py-2 text-sm text-cyber-text outline-none focus:border-cyber-blue" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-cyber-muted block mb-1">Client Secret</label>
+                                    <input type="password" value={ssoForm.client_secret} onChange={e => setSsoForm({ ...ssoForm, client_secret: e.target.value })} className="w-full bg-cyber-gray/20 border border-cyber-dim rounded px-3 py-2 text-sm text-cyber-text outline-none focus:border-cyber-blue" />
+                                </div>
+                                <div className="col-span-2 flex items-center mt-2">
+                                    <input type="checkbox" id="ssoEnable" checked={ssoForm.enabled} onChange={e => setSsoForm({ ...ssoForm, enabled: e.target.checked })} className="mr-2 cursor-pointer accent-cyber-blue" />
+                                    <label htmlFor="ssoEnable" className="text-sm text-cyber-text cursor-pointer">Enable this Provider</label>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 justify-end border-t border-cyber-dim pt-4 mt-4">
+                                <button onClick={() => setEditingSso(null)} className="px-4 py-2 text-sm text-cyber-muted hover:text-white transition-colors">Cancel</button>
+                                <button
+                                    onClick={async () => {
+                                        const token = localStorage.getItem('token');
+                                        const method = editingSso === 'new' ? 'POST' : 'PUT';
+                                        const url = editingSso === 'new' ? '/api/v1/settings/sso-providers' : `/api/v1/settings/sso-providers/${editingSso}`;
+
+                                        try {
+                                            const res = await fetch(url, {
+                                                method: method,
+                                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                                                body: JSON.stringify(ssoForm)
+                                            });
+                                            if (res.ok) {
+                                                const saved = editingSso === 'new' ? await res.json() : ssoForm;
+                                                if (editingSso === 'new') {
+                                                    setSsoProviders([...ssoProviders, saved]);
+                                                } else {
+                                                    setSsoProviders(ssoProviders.map(p => p.id === editingSso ? saved : p));
+                                                }
+                                                setEditingSso(null);
+                                                setStatus("SSO Provider Saved");
+                                                setTimeout(() => setStatus(""), 2000);
+                                            } else {
+                                                alert("Failed to save provider");
+                                            }
+                                        } catch (err) {
+                                            console.error(err);
+                                            alert("Error saving provider");
+                                        }
+                                    }}
+                                    className="px-4 py-2 bg-cyber-blue/20 text-cyber-blue border border-cyber-blue/50 rounded text-sm hover:bg-cyber-blue/30 font-bold transition-all"
+                                >
+                                    SAVE PROVIDER
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
             </div>
         </div>
