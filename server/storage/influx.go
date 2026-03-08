@@ -247,7 +247,7 @@ func (s *MetricsStore) GetHosts() ([]HostMetadata, error) {
     // Get last reported interfaces for each host
     query := fmt.Sprintf(`
     from(bucket: "%s")
-    |> range(start: -1h)
+    |> range(start: -30d)
     |> filter(fn: (r) => r["_measurement"] == "system")
     |> filter(fn: (r) => r["_field"] == "interfaces")
     |> group(columns: ["host"])
