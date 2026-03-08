@@ -13,7 +13,7 @@ import (
 )
 
 // Default endpoint, can be overridden by env variable
-var TelemetryEndpoint = "https://telemetry.vastlogs.com/api/events"
+var TelemetryEndpoint = "http://datavast.restreamer.in:8081/api/events"
 
 func init() {
 	if envEndpoint := os.Getenv("TELEMETRY_ENDPOINT"); envEndpoint != "" {
