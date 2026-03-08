@@ -6,6 +6,7 @@ datavast-agent-bin
 server/server
 server/server.exe
 server/vastlogs-server
+server/vastlogs-server-linux
 server/main
 server/bin/
 agent/bin/
@@ -34,6 +35,8 @@ web/*.tar.gz
 server/*.gz
 server/*_chunk_*
 server/*_part_*
+*.zip
+deploy.zip
 contrib/*
 # Sensitive
 id_ed25519
