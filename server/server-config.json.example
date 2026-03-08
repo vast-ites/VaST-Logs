@@ -6,5 +6,7 @@
   "system_api_key": "GENERATE_SECURE_API_KEY_HERE",
   "mfa_enabled": false,
   "mfa_secret": "GENERATE_MFA_SECRET_IF_ENABLED",
-  "agent_secrets": {}
+  "agent_secrets": {},
+  "telemetry_enabled": null,
+  "instance_id": ""
 }

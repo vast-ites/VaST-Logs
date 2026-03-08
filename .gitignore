@@ -4,6 +4,8 @@ datavast-agent
 datavast-server-bin
 datavast-agent-bin
 server/server
+server/server.exe
+server/vastlogs-server
 server/main
 server/bin/
 agent/bin/

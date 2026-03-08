@@ -17,6 +17,8 @@ export const Alerts = () => {
     const [showRuleModal, setShowRuleModal] = useState(false);
     const [showChannelModal, setShowChannelModal] = useState(false);
     const [showSilenceModal, setShowSilenceModal] = useState(false);
+    const [showSilenceAllModal, setShowSilenceAllModal] = useState(false);
+    const [showUnsilenceAllModal, setShowUnsilenceAllModal] = useState(false);
     const [selectedRule, setSelectedRule] = useState(null); // For silencing
     const [editingRuleId, setEditingRuleId] = useState(null); // For editing
     const [customPort, setCustomPort] = useState('');
@@ -27,6 +29,7 @@ export const Alerts = () => {
     const [newRule, setNewRule] = useState({ name: '', metric: 'cpu_percent', host: '*', operator: '>', threshold: 80, channels: [], enabled: true });
     const [newChannel, setNewChannel] = useState({ name: '', type: 'webhook', config: { url: '', email: '' } });
     const [silenceDuration, setSilenceDuration] = useState('1h');
+    const [silenceAllDuration, setSilenceAllDuration] = useState('1h');
     const [silenceHost, setSilenceHost] = useState('');
 
     useEffect(() => {
@@ -141,6 +144,17 @@ export const Alerts = () => {
         fetchData();
     };
 
+    const handleSilenceAll = async () => {
+        const token = localStorage.getItem('token');
+        await fetch('/api/v1/alerts/silence-all', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ duration: silenceAllDuration })
+        });
+        setShowSilenceAllModal(false);
+        fetchData();
+    };
+
     const handleUnsilence = async (ruleId, host) => {
         const token = localStorage.getItem('token');
         await fetch('/api/v1/alerts/unsilence', {
@@ -148,6 +162,16 @@ export const Alerts = () => {
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ rule_id: ruleId, host })
         });
+        fetchData();
+    };
+
+    const handleUnsilenceAll = async () => {
+        const token = localStorage.getItem('token');
+        await fetch('/api/v1/alerts/unsilence-all', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        setShowUnsilenceAllModal(false);
         fetchData();
     };
 
@@ -168,7 +192,13 @@ export const Alerts = () => {
             {activeTab === 'rules' && (
                 <div className="space-y-4">
                     {role === 'admin' && (
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-3 flex-wrap">
+                            <button onClick={() => setShowUnsilenceAllModal(true)} className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded transition text-sm font-semibold">
+                                <Volume2 size={16} /> Unsilence All
+                            </button>
+                            <button onClick={() => setShowSilenceAllModal(true)} className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded transition text-sm font-semibold">
+                                <VolumeX size={16} /> Silence All Alerts
+                            </button>
                             <button onClick={() => { setEditingRuleId(null); setNewRule({ name: '', metric: 'cpu_percent', host: '*', operator: '>', threshold: 80, channels: [], enabled: true }); setShowRuleModal(true); }} className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded transition text-sm font-semibold">
                                 <Plus size={16} /> Create Rule
                             </button>
@@ -510,6 +540,49 @@ export const Alerts = () => {
                         <div className="flex justify-end gap-3 mt-6">
                             <button onClick={() => setShowSilenceModal(false)} className="px-4 py-2 text-cyber-muted hover:text-cyber-text">Cancel</button>
                             <button onClick={handleSilence} className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold transition-colors">Silence</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Silence All Modal */}
+            {showSilenceAllModal && (
+                <div className="fixed inset-0 bg-cyber-black/80 flex items-center justify-center z-50 p-4">
+                    <div className="glass-panel border border-cyber-gray/30 rounded-xl p-6 w-full max-w-sm shadow-2xl">
+                        <h2 className="text-xl font-bold text-cyber-text mb-4">Silence All Alerts</h2>
+                        <p className="text-sm text-cyber-muted mb-4">Are you sure you want to silence all active alert rules?</p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs uppercase text-cyber-muted font-bold mb-1">Duration</label>
+                                <select className="w-full bg-cyber-gray/10 border border-cyber-gray/30 rounded p-2 text-cyber-text outline-none focus:border-cyan-500 transition-colors" value={silenceAllDuration} onChange={e => setSilenceAllDuration(e.target.value)}>
+                                    <option value="15m" className="bg-cyber-background text-cyber-text">15 Minutes</option>
+                                    <option value="1h" className="bg-cyber-background text-cyber-text">1 Hour</option>
+                                    <option value="6h" className="bg-cyber-background text-cyber-text">6 Hours</option>
+                                    <option value="24h" className="bg-cyber-background text-cyber-text">24 Hours</option>
+                                    <option value="72h" className="bg-cyber-background text-cyber-text">3 Days</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button onClick={() => setShowSilenceAllModal(false)} className="px-4 py-2 text-cyber-muted hover:text-cyber-text">Cancel</button>
+                            <button onClick={handleSilenceAll} className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded font-bold transition-colors">Silence All</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Unsilence All Modal */}
+            {showUnsilenceAllModal && (
+                <div className="fixed inset-0 bg-cyber-black/80 flex items-center justify-center z-50 p-4">
+                    <div className="glass-panel border border-cyber-gray/30 rounded-xl p-6 w-full max-w-sm shadow-2xl">
+                        <h2 className="text-xl font-bold text-cyber-text mb-4">Unsilence All Alerts</h2>
+                        <p className="text-sm text-cyber-muted mb-4">Are you sure you want to remove all active solence periods from **all** alert rules? This will immediately allow silenced alerts to trigger again.</p>
+
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button onClick={() => setShowUnsilenceAllModal(false)} className="px-4 py-2 text-cyber-muted hover:text-cyber-text">Cancel</button>
+                            <button onClick={handleUnsilenceAll} className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded font-bold transition-colors">Confirm Unsilence All</button>
                         </div>
                     </div>
                 </div>

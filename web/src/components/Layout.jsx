@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { MobileNav } from './MobileNav';
 import ConnectAgentModal from './ConnectAgentModal';
+import TelemetryPrompt from './TelemetryPrompt';
 
 const Layout = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,6 +61,8 @@ const Layout = () => {
                 <div className="absolute bottom-0 left-0 w-[600px] h-[600px] pointer-events-none hidden sm:block"
                     style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%)' }}
                 ></div>
+
+                <TelemetryPrompt />
 
                 <TopBar
                     onAddSource={() => setIsModalOpen(true)}

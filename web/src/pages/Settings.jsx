@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Save, Database, Bell, Shield, Moon, Key, Eye, EyeOff, Copy, BellRing } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Database, Bell, Shield, Moon, Key, Eye, EyeOff, Copy, BellRing, Activity } from 'lucide-react';
 import { useNotifications } from '../contexts/NotificationContext';
 import { copyToClipboard } from '../utils/clipboard';
 
@@ -119,6 +119,7 @@ const Settings = () => {
     const [smtpUser, setSmtpUser] = useState("");
     const [smtpPassword, setSmtpPassword] = useState("");
     const [showSMTP, setShowSMTP] = useState(false);
+    const [telemetryEnabled, setTelemetryEnabled] = useState(false);
 
     const [saving, setSaving] = useState(false);
     const [status, setStatus] = useState("");
@@ -163,6 +164,7 @@ const Settings = () => {
                     setSmtpPort(data.smtp_port || 587);
                     setSmtpUser(data.smtp_user || "");
                     setSmtpPassword(data.smtp_password || "");
+                    setTelemetryEnabled(data.telemetry_enabled === true);
 
                     setApiKey(data.system_api_key || "");
                     setMfaEnabled(data.mfa_enabled || false);
@@ -250,7 +252,8 @@ const Settings = () => {
                     smtp_server: smtpServer,
                     smtp_port: parseInt(smtpPort),
                     smtp_user: smtpUser,
-                    smtp_password: smtpPassword
+                    smtp_password: smtpPassword,
+                    telemetry_enabled: telemetryEnabled
                 })
             });
 
@@ -560,6 +563,25 @@ const Settings = () => {
                 {/* Browser Notifications */}
                 <div className="glass-panel p-6 rounded-xl border border-cyber-gray md:col-span-2">
                     <BrowserNotificationSettings />
+                </div>
+
+                {/* Telemetry Settings */}
+                <div className="glass-panel p-6 rounded-xl border border-cyber-gray md:col-span-2">
+                    <h3 className="text-lg font-bold text-cyber-cyan mb-4 flex items-center gap-2">
+                        <Activity size={18} /> Telemetry & Analytics
+                    </h3>
+                    <div className="flex items-center justify-between p-4 bg-cyber-gray/10 rounded-lg border border-cyber-gray/20">
+                        <div>
+                            <span className="text-cyber-text font-bold block">Share Anonymous Usage Data</span>
+                            <span className="text-xs text-cyber-muted">Help us improve VaST-Logs by sharing anonymous stats and error reports. No sensitive data is collected.</span>
+                        </div>
+                        <div
+                            onClick={() => setTelemetryEnabled(!telemetryEnabled)}
+                            className={`flex-shrink-0 w-12 h-6 rounded-full p-1 cursor-pointer transition-colors ${telemetryEnabled ? 'bg-cyber-green' : 'bg-cyber-gray/40'}`}
+                        >
+                            <div className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform ${telemetryEnabled ? 'translate-x-6' : ''}`} />
+                        </div>
+                    </div>
                 </div>
 
                 {/* Agent Enrollment Keys */}
