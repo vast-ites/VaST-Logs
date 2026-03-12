@@ -322,6 +322,22 @@ func NewLogStore(dsn string) (*LogStore, error) {
 		return nil, fmt.Errorf("failed to create service_stats: %w", err)
 	}
 
+	// Create Monitor Heartbeats Table
+	err = conn.Exec(context.Background(), `
+		CREATE TABLE IF NOT EXISTS vastlogs.monitor_heartbeats (
+			timestamp DateTime,
+			monitor_id String,
+			status String,
+			response_time_ms Int32,
+			message String
+		) ENGINE = MergeTree()
+		ORDER BY (monitor_id, timestamp)
+		TTL timestamp + INTERVAL 30 DAY
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create monitor_heartbeats: %w", err)
+	}
+
 	store := &LogStore{conn: conn}
 
 	// Apply retention policy at startup (default 7 days for app tables, 3 days for system tables)
@@ -352,6 +368,7 @@ func (s *LogStore) ApplyRetentionPolicy(days int) {
 		{"vastlogs.firewall", "timestamp"},
 		{"vastlogs.access_logs", "timestamp"},
 		{"vastlogs.service_stats", "timestamp"},
+		{"vastlogs.monitor_heartbeats", "timestamp"},
 	}
 	for _, t := range appTables {
 		err := s.conn.Exec(context.Background(), fmt.Sprintf(
@@ -1286,4 +1303,53 @@ func (s *LogStore) PurgeHost(host string) error {
 	// IP geo cache does not have a host column, skip it
 	log.Printf("[PurgeHost] Purged all data for host '%s' from ClickHouse", host)
 	return nil
+}
+
+type MonitorHeartbeat struct {
+	Timestamp      time.Time `json:"timestamp"`
+	MonitorID      string    `json:"monitor_id"`
+	Status         string    `json:"status"` // "UP", "DOWN", "PENDING"
+	ResponseTimeMs int32     `json:"response_time_ms"`
+	Message        string    `json:"message"`
+}
+
+func (s *LogStore) InsertMonitorHeartbeat(entry MonitorHeartbeat) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.conn.Exec(context.Background(), `
+		INSERT INTO vastlogs.monitor_heartbeats (timestamp, monitor_id, status, response_time_ms, message)
+		VALUES (?, ?, ?, ?, ?)
+	`, entry.Timestamp, entry.MonitorID, entry.Status, entry.ResponseTimeMs, entry.Message)
+}
+
+func (s *LogStore) GetMonitorHistory(monitorID string, limit int) ([]MonitorHeartbeat, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if limit <= 0 {
+		limit = 100
+	}
+
+	rows, err := s.conn.Query(context.Background(), fmt.Sprintf(`
+		SELECT timestamp, monitor_id, status, response_time_ms, message
+		FROM vastlogs.monitor_heartbeats
+		WHERE monitor_id = ?
+		ORDER BY timestamp DESC
+		LIMIT %d
+	`, limit), monitorID)
+	
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var history []MonitorHeartbeat
+	for rows.Next() {
+		var h MonitorHeartbeat
+		if err := rows.Scan(&h.Timestamp, &h.MonitorID, &h.Status, &h.ResponseTimeMs, &h.Message); err != nil {
+			return nil, err
+		}
+		history = append(history, h)
+	}
+	return history, nil
 }

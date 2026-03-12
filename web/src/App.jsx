@@ -19,6 +19,7 @@ import { NetworkPage } from './pages/Network';
 import { Alerts } from './pages/Alerts';
 import Connections from './pages/Connections';
 import IpIntelligence from './pages/IpIntelligence';
+import Monitoring from './pages/Monitoring';
 
 import { HostProvider } from './contexts/HostContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -156,6 +157,14 @@ function App() {
                   element={
                     <PrivateRoute>
                       <Alerts />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="monitoring"
+                  element={
+                    <PrivateRoute>
+                      <Monitoring />
                     </PrivateRoute>
                   }
                 />

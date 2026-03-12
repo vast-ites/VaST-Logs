@@ -13,8 +13,9 @@ import (
 	"github.com/vastlogs/vastlogs/server/api/ip_intelligence"
 	"github.com/vastlogs/vastlogs/server/auth"
 	"github.com/vastlogs/vastlogs/server/geoip"
+	"github.com/vastlogs/vastlogs/server/monitor"
 	"github.com/vastlogs/vastlogs/server/storage"
-    "github.com/vastlogs/vastlogs/server/telemetry"
+	"github.com/vastlogs/vastlogs/server/telemetry"
 	"github.com/gin-contrib/cors"
 	// "github.com/gin-contrib/gzip"
 	// "github.com/gin-contrib/static"
@@ -91,6 +92,7 @@ func main() {
 	config := storage.NewConfigStore("server-config.json")
 	authMgr := auth.NewAuthManager(config)
 	alertMgr := alert.NewAlertService(config, clickh, influx)
+	monitorSvc := monitor.NewMonitorService(config, clickh, alertMgr)
 
     // Initialize telemetry
     telemetry.Initialize(config)
@@ -138,6 +140,7 @@ func main() {
 		Config:  config,
 		Auth:    authMgr,
 		Alerts:  alertMgr,
+		Monitor: monitorSvc,
 	}
 	api.SetupRoutes(r, handler)
 

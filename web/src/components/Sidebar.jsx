@@ -74,6 +74,7 @@ export const Sidebar = ({ onClose }) => {
                     <h3 className="text-[10px] text-cyber-muted font-mono uppercase tracking-widest mb-3 pl-3">Observability</h3>
                     <SidebarItem icon={Shield} label="Security" path="/security" onClick={onClose} />
                     <SidebarItem icon={BellRing} label="Alerts" path="/alerts" onClick={onClose} />
+                    <SidebarItem icon={Activity} label="Monitoring" path="/monitoring" onClick={onClose} />
                     <SidebarItem icon={Globe} label="Connection Tracking" path="/connections" onClick={onClose} />
                     {localStorage.getItem('role') === 'admin' && (
                         <SidebarItem icon={Users} label="Users" path="/users" onClick={onClose} />

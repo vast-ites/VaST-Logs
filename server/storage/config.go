@@ -8,6 +8,24 @@ import (
     "time"
 )
 
+type MonitorConfig struct {
+    ID          string `json:"id"`
+    Name        string `json:"name"`
+    Type        string `json:"type"`          // http, ping, tcp, api, ssl, domain, dns, heartbeat
+    Target      string `json:"target"`        // URL or IP
+    Port        int    `json:"port"`          // For TCP
+    Interval    int    `json:"interval"`      // Seconds between checks
+    Timeout     int    `json:"timeout"`       // Timeout in seconds
+    Keyword     string `json:"keyword"`       // For HTTP body checking
+    ExpectedDNS string `json:"expected_dns"`  // For DNS resolution check
+    Enabled     bool   `json:"enabled"`
+    IgnoreSSL   bool   `json:"ignore_ssl"`    // Ignore self-signed certs
+
+    // Alert thresholds
+    ThresholdResponseTime int `json:"threshold_response_time"` // ms, 0 to disable
+    ThresholdFailures     int `json:"threshold_failures"`      // Number of consecutive failures before alerting
+}
+
 type AlertRule struct {
     ID        string               `json:"id"`
     Name      string               `json:"name"`
@@ -57,6 +75,7 @@ type SystemConfig struct {
     AlertRules           []AlertRule           `json:"alert_rules"`
     NotificationChannels []NotificationChannel `json:"notification_channels"`
     SSOProviders         []SSOProvider         `json:"sso_providers"`
+    Monitors             []MonitorConfig       `json:"monitors"`
 
     SMTPServer     string    `json:"smtp_server"`
     SMTPPort       int       `json:"smtp_port"`

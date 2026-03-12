@@ -16,6 +16,7 @@ import (
     "github.com/vastlogs/vastlogs/server/geoip"
     "github.com/vastlogs/vastlogs/server/auth"
     "github.com/vastlogs/vastlogs/server/alert"
+    "github.com/vastlogs/vastlogs/server/monitor"
     "github.com/vastlogs/vastlogs/server/telemetry"
 	"github.com/gin-gonic/gin"
 
@@ -29,6 +30,7 @@ type IngestionHandler struct {
     Config  *storage.ConfigStore
     Auth    *auth.AuthManager
     Alerts  *alert.AlertService
+    Monitor *monitor.MonitorService
 }
 
 type PartitionStat struct {
@@ -529,6 +531,7 @@ func SetupRoutes(r *gin.Engine, h *IngestionHandler) {
         
         // Agent Registration (validates system_api_key in handler, no middleware)
 		v1.POST("/agent/register", h.HandleRegisterAgent)
+        v1.POST("/monitors/heartbeat/:id", h.HandleMonitorHeartbeat)
 
         // SSO Public Endpoints
         ssoAuthRoutes := v1.Group("/auth/sso")
@@ -580,6 +583,10 @@ func SetupRoutes(r *gin.Engine, h *IngestionHandler) {
 
             // Blocked IPs list (for IP Intelligence quick-block panel)
             userRoutes.GET("/blocked-ips", h.HandleGetBlockedIPs)
+            
+            // Monitoring (Read Only)
+            userRoutes.GET("/monitors", h.HandleGetMonitors)
+            userRoutes.GET("/monitors/:id/history", h.HandleGetMonitorHistory)
         }
 
         // Admin endpoints (always require auth when AUTH_ENABLED=true)
@@ -616,6 +623,11 @@ func SetupRoutes(r *gin.Engine, h *IngestionHandler) {
             adminRoutes.POST("/alerts/unsilence", h.HandleUnsilenceAlert)
             adminRoutes.POST("/alerts/unsilence-all", h.HandleUnsilenceAllAlerts)
             adminRoutes.GET("/alerts/fired", h.HandleGetFiredAlerts)
+
+            // Monitoring Management
+            adminRoutes.POST("/monitors", h.HandleCreateMonitor)
+            adminRoutes.PUT("/monitors/:id", h.HandleUpdateMonitor)
+            adminRoutes.DELETE("/monitors/:id", h.HandleDeleteMonitor)
 
             // User Management
             adminRoutes.GET("/users", h.HandleGetUsers)
